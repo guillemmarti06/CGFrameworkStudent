@@ -19,6 +19,7 @@ public:
 	int window_height;
 
 	float time;
+    int current_task = 1;
 
 	// Input
 	const Uint8* keystate;
