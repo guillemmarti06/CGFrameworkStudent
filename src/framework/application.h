@@ -19,7 +19,9 @@ public:
 	int window_height;
 
 	float time;
-    int current_task = 1;
+    int mode = 1;  // Start with mode 1
+    int borderWidth = 5;   // initial border thickness (for example)
+    bool fillShapes = true;  // toggled with F
 
 	// Input
 	const Uint8* keystate;

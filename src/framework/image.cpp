@@ -437,3 +437,52 @@ void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c)
     }
 }
 
+void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int borderWidth,
+                     bool isFilled, const Color& fillColor){
+    // Fill the interior of the rectangle
+    if (isFilled)
+    {
+        // Loop through the inner area to fill the interior pixels (exclude the border, we'll do it later)
+        for (int j = y + borderWidth; j < y + h - borderWidth; ++j){
+            for (int i = x + borderWidth; i < x + w - borderWidth; ++i){
+                // Check framebuffer limits
+                if (i >= 0 && i < (int)width && j >= 0 && j < (int)height){
+                    SetPixel((unsigned)i, (unsigned)j, fillColor);
+                }
+            }
+        }
+    }
+
+    // Now, draw the border with the desired thickness
+    for (int b = 0; b < borderWidth; ++b){
+        // Top and bottom edges
+        for (int i = x; i < x + w; ++i){
+            int top = y + b;               // Top border layer
+            int bottom = y + h - 1 - b;    // Bottom border layer
+
+            if (i >= 0 && i < (int)width){
+                if (top >= 0 && top < (int)height)
+                    SetPixel((unsigned)i, (unsigned)top, borderColor);
+
+                if (bottom >= 0 && bottom < (int)height)
+                    SetPixel((unsigned)i, (unsigned)bottom, borderColor);
+            }
+        }
+
+        // Lastly, the left and right edges
+        for (int j = y; j < y + h; ++j){
+            int left = x + b;              // Left border layer
+            int right = x + w - 1 - b;     // Right border layer
+
+            if (j >= 0 && j < (int)height){
+                if (left >= 0 && left < (int)width)
+                    SetPixel((unsigned)left, (unsigned)j, borderColor);
+
+                if (right >= 0 && right < (int)width)
+                    SetPixel((unsigned)right, (unsigned)j, borderColor);
+            }
+        }
+    }
+}
+
+

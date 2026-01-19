@@ -31,25 +31,18 @@ void Application::Init(void)
 // Render one frame
 void Application::Render(void)
 {
-// TRY OUT the draw line function (IT WORKS WELL)
+// Switch between modes
     
-    framebuffer.Fill(Color::BLACK);
-    int x = framebuffer.width / 2;
-    int y = framebuffer.height / 2;
-    Color color(255, 255, 255);
-    
-    switch(current_task)
-        {
-            case 1: // Task 2.1.1 (Drawing Lines)
-                framebuffer.DrawLineDDA(x, y, x + 100 * cos(time), y + 100 * sin(time), color);
-                break;
+    switch(mode)
+    {
+        case 1: // Paint
+            // mouse input → draw primitives
+            break;
 
-            case 2: // Task 2.1.2 (Drawing Rectangles)
-                break;
-
-            case 3: // Task 2.
-                break;
-        }
+        case 2: // Animation
+            // particle system, animation, etc.
+            break;
+    }
 
      
 
@@ -68,9 +61,27 @@ void Application::OnKeyPressed( SDL_KeyboardEvent event )
 	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
 	switch(event.keysym.sym) {
 		case SDLK_ESCAPE: exit(0); break; // ESC key, kill the app
-        case SDLK_1: current_task = 1; break; // DDA line
-        case SDLK_2: current_task = 2; break; // next task
-        case SDLK_3: current_task = 3; break; // next task
+            
+        case SDLK_1: mode = 1; break; // Paint
+        case SDLK_2: mode= 2; break; // Animation
+            
+        // Increase border width
+        case SDLK_PLUS:
+        case SDLK_KP_PLUS:
+            borderWidth++;
+            break;
+
+        // Decrease border width
+        case SDLK_MINUS:
+        case SDLK_KP_MINUS:
+            if (borderWidth > 1)
+                borderWidth--;
+            break;
+            
+        // Fill Shapes toggle
+        case SDLK_f:
+            fillShapes = !fillShapes;
+            break;
 	}
 }
 
