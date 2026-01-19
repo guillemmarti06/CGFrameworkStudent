@@ -416,7 +416,7 @@ void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c)
         return;
     }
     
-    // Compute the direction step vector to advance through all the points (given formula in slides: v = (dx/d, dy/d))
+    // STEP 2: Compute the direction step vector to advance through all the points (given formula in slides: v = (dx/d, dy/d))
     
     float vx = (float)dx / (float)d;
     float vy = (float)dy / (float)d;
@@ -424,7 +424,7 @@ void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c)
     float x = (float)x0;
     float y = (float)y0;
 
-    for (int i = 0; i <= d; ++i) // Starting in x0,y0 = A and iterate d times:
+    for (int i = 0; i <= d; ++i) // STEP 3: Starting in x0,y0 = A and iterate d times:
     {
         int px = (int)std::floor(x); // Paint pixel at [floor(x), floor(y)]
         int py = (int)std::floor(y);
