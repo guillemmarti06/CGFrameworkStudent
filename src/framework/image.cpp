@@ -397,3 +397,43 @@ void FloatImage::Resize(unsigned int width, unsigned int height)
 	this->height = height;
 	pixels = new_pixels;
 }
+
+// Function for drawing lines implemented
+void Image::DrawLineDDA(int x0, int y0, int x1, int y1, const Color& c)
+{
+    // STEP 1: Compute largest leg on triangle (notice that this distance equals the number of pixels to draw)
+    
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+
+    int d = std::max(std::abs(dx), std::abs(dy)); // given formula in the google slides
+
+    // if the line it's just a single point, we just paint the pixel (strange case)
+    if (d == 0)
+    {
+        if (x0 >= 0 && x0 < (int)width && y0 >= 0 && y0 < (int)height)
+            SetPixel((unsigned)x0, (unsigned)y0, c);
+        return;
+    }
+    
+    // Compute the direction step vector to advance through all the points (given formula in slides: v = (dx/d, dy/d))
+    
+    float vx = (float)dx / (float)d;
+    float vy = (float)dy / (float)d;
+
+    float x = (float)x0;
+    float y = (float)y0;
+
+    for (int i = 0; i <= d; ++i) // Starting in x0,y0 = A and iterate d times:
+    {
+        int px = (int)std::floor(x); // Paint pixel at [floor(x), floor(y)]
+        int py = (int)std::floor(y);
+
+        if (px >= 0 && px < (int)width && py >= 0 && py < (int)height)
+            SetPixel((unsigned)px, (unsigned)py, c);
+
+        x += vx;    // increment x and y by v to keep iterating
+        y += vy;
+    }
+}
+
