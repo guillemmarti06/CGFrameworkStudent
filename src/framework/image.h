@@ -75,6 +75,16 @@ public:
     
     // Draw rectangle function
     void DrawRect(int x, int y, int w, int h, const Color& borderColor, int borderWidth, bool isFilled, const Color& fillColor);
+    
+    // Rasterize triangles
+    void DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor);
+    
+    // AET scanline helper (modified DDA)
+    void ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<struct Cell>& table);
+    
+    // PAINT TOOL
+    void DrawImage(const Image& image, int x, int y);
+
 
 	// Returns a new image with the area from (startx,starty) of size width,height
 	Image GetArea(unsigned int start_x, unsigned int start_y, unsigned int width, unsigned int height);

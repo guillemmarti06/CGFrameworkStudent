@@ -485,4 +485,118 @@ void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int b
     }
 }
 
+// Each row stores the minX and maxX covered by the triangle at that height (struct from slides)
+struct Cell{
+    int minx = std::numeric_limits<int>::max();
+    int maxx = std::numeric_limits<int>::min();
+};
+
+// Modified DDA: instead of painting pixels we update table[y].minx / maxx
+void Image::ScanLineDDA(int x0, int y0, int x1, int y1, std::vector<Cell>& table)
+{
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+
+    int d = std::max(std::abs(dx), std::abs(dy));
+    if (d == 0)
+    {
+        // edge w/ single point
+        if (y0 >= 0 && y0 < (int)table.size())
+        {
+            table[y0].minx = std::min(table[y0].minx, x0);
+            table[y0].maxx = std::max(table[y0].maxx, x0);
+        }
+        return;
+    }
+
+    float vx = (float)dx / (float)d;
+    float vy = (float)dy / (float)d;
+
+    float x = (float)x0;
+    float y = (float)y0;
+
+    for (int i = 0; i <= d; ++i)
+    {
+        int px = (int)std::floor(x);
+        int py = (int)std::floor(y);
+
+        // Update AET cell for this row (only if it is inside the table)
+        if (py >= 0 && py < (int)table.size())
+        {
+            table[py].minx = std::min(table[py].minx, px);
+            table[py].maxx = std::max(table[py].maxx, px);
+        }
+
+        x += vx;
+        y += vy;
+    }
+}
+
+void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2, const Color& borderColor, bool isFilled, const Color& fillColor){
+    // Convert Vector2 to integer pixel coordinates
+    int x0 = (int)std::round(p0.x);
+    int y0 = (int)std::round(p0.y);
+    int x1 = (int)std::round(p1.x);
+    int y1 = (int)std::round(p1.y);
+    int x2 = (int)std::round(p2.x);
+    int y2 = (int)std::round(p2.y);
+
+    // 1- Fill the triangle using AET
+    if (isFilled){
+        // Create the Active Edge Table, one cell per scanline
+        std::vector<Cell> table;
+        table.resize(height);
+
+        // Scan the three triangle edges and update the table
+        ScanLineDDA(x0, y0, x1, y1, table);
+        ScanLineDDA(x1, y1, x2, y2, table);
+        ScanLineDDA(x2, y2, x0, y0, table);
+
+        // Fill the triangle row by row using minX & maxX
+        for (int y = 0; y < (int)height; ++y){
+            int minx = table[y].minx;
+            int maxx = table[y].maxx;
+
+            // If intersects the triangle
+            if (minx <= maxx){
+                // framebuffer limits
+                minx = std::max(minx, 0);
+                maxx = std::min(maxx, (int)width - 1);
+
+                for (int x = minx; x <= maxx; ++x){
+                    SetPixel((unsigned)x, (unsigned)y, fillColor);
+                }
+            }
+        }
+    }
+    // 2- Draw triangle border (We did it at last because at first, the filling proccess was covering also the border)
+    // So we draw the edges AFTER filling so the border is visible
+    DrawLineDDA(x0, y0, x1, y1, borderColor);
+    DrawLineDDA(x1, y1, x2, y2, borderColor);
+    DrawLineDDA(x2, y2, x0, y0, borderColor);
+}
+
+// PAINT TOOL:
+
+void Image::DrawImage(const Image& img, int x, int y)
+{
+    // Copy pixels from img to this image at (x,y) position
+    // This is used to draw UI icons- toolbar
+
+    for (int j = 0; j < (int)img.height; ++j)
+    {
+        for (int i = 0; i < (int)img.width; ++i)
+        {
+            int dstx = x + i;
+            int dsty = y + j;
+
+            // Avoid writing out of framebuffer memory
+            if (dstx < 0 || dstx >= (int)width || dsty < 0 || dsty >= (int)height)
+                continue;
+
+            Color c = img.GetPixel((unsigned)i, (unsigned)j);
+            SetPixel((unsigned)dstx, (unsigned)dsty, c);
+        }
+    }
+}
 

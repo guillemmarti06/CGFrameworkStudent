@@ -7,6 +7,7 @@
 #include "main/includes.h"
 #include "framework.h"
 #include "image.h"
+#include "button.h"
 
 class Application
 {
@@ -22,6 +23,24 @@ public:
     int mode = 1;  // Start with mode 1
     int borderWidth = 5;   // initial border thickness (for example)
     bool fillShapes = true;  // toggled with F
+    
+    // Paint tool state
+
+    Image canvas;                 // Persistent drawing canvas (what the user paints)
+
+    bool isDrawing = false;       // True while mouse is pressed (dragging)
+    Vector2 startPos;             // First click position
+    Vector2 lastPos;              // Last mouse position (for pencil/eraser)
+
+    // Current selected tool
+    enum ToolType { TOOL_PENCIL, TOOL_ERASER, TOOL_LINE, TOOL_RECT, TOOL_TRIANGLE };
+    ToolType currentTool = TOOL_PENCIL;
+
+    Color currentColor = Color(255, 255, 255); // Default drawing color (white)
+
+    // UI buttons (toolbar)
+    std::vector<Button> buttons;
+
 
 	// Input
 	const Uint8* keystate;
