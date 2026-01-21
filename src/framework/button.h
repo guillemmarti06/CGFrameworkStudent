@@ -9,7 +9,8 @@
 #include "image.h"
 #include "framework.h"
 
-// Button types to know what action to do
+// Button types = what each icon does when clicked
+// We used an enum so we can easily check actions with if/else in Application
 enum ButtonType
 {
     BTN_PENCIL,
@@ -39,7 +40,7 @@ public:
     
     Image icon;        // Image used to render the button
     Vector2 position;
-    ButtonType type;   // Action id
+    ButtonType type;   // What this button represents
     
     Button() {}
     Button(const Image& img, Vector2 pos, ButtonType t): icon(img), position(pos), type(t) {}

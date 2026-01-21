@@ -15,7 +15,7 @@ bool Button::IsMouseInside(Vector2 mousePosition) const
            mousePosition.y < position.y + icon.height;
 }
 
-// Draw button icon using the function Image::DrawImage
+// Draw button icon using the function Image::DrawImage, just raw pixels
 void Button::Render(Image& framebuffer) const
 {
     framebuffer.DrawImage(icon, (int)position.x, (int)position.y);

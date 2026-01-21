@@ -8,6 +8,7 @@
 #include "framework.h"
 #include "image.h"
 #include "button.h"
+#include "ParticleSystem.h"
 
 class Application
 {
@@ -45,6 +46,9 @@ public:
     Image img_pencil, img_eraser, img_line, img_rect, img_tri;
     Image img_clear, img_load, img_save;
     Image img_black, img_white, img_red, img_green, img_blue, img_yellow, img_cyan, img_pink;
+    
+    // for the animation
+    ParticleSystem particleSystem;
 
 
 	// Input
