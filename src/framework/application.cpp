@@ -31,27 +31,27 @@ void Application::Init(void)
     canvas.Resize(framebuffer.width, framebuffer.height);
     canvas.Fill(Color::BLACK);
 
-    // Load button icons from res/images/ (as described in the lab). :contentReference[oaicite:18]{index=18}
-    Image img_pencil;   img_pencil.LoadPNG("res/images/pencil.png");
-    Image img_eraser;   img_eraser.LoadPNG("res/images/eraser.png");
-    Image img_line;     img_line.LoadPNG("res/images/line.png");
-    Image img_rect;     img_rect.LoadPNG("res/images/rectangle.png");
-    Image img_tri;      img_tri.LoadPNG("res/images/triangle.png");
-    Image img_clear;    img_clear.LoadPNG("res/images/clear.png");
-    Image img_load;     img_load.LoadPNG("res/images/load.png");
-    Image img_save;     img_save.LoadPNG("res/images/save.png");
+    // Load button icons from res/images/ (as described in the lab)
+    img_pencil.LoadPNG("images/pencil.png");
+    img_eraser.LoadPNG("images/eraser.png");
+    img_line.LoadPNG("images/line.png");
+    img_rect.LoadPNG("images/rectangle.png");
+    img_tri.LoadPNG("images/triangle.png");
+    img_clear.LoadPNG("images/clear.png");
+    img_load.LoadPNG("images/load.png");
+    img_save.LoadPNG("images/save.png");
 
-    Image img_black;    img_black.LoadPNG("res/images/black.png");
-    Image img_white;    img_white.LoadPNG("res/images/white.png");
-    Image img_red;      img_red.LoadPNG("res/images/red.png");
-    Image img_green;    img_green.LoadPNG("res/images/green.png");
-    Image img_blue;     img_blue.LoadPNG("res/images/blue.png");
-    Image img_yellow;   img_yellow.LoadPNG("res/images/yellow.png");
-    Image img_cyan;     img_cyan.LoadPNG("res/images/cyan.png");
-    Image img_pink;     img_pink.LoadPNG("res/images/pink.png");
+    img_black.LoadPNG("images/black.png");
+    img_white.LoadPNG("images/white.png");
+    img_red.LoadPNG("images/red.png");
+    img_green.LoadPNG("images/green.png");
+    img_blue.LoadPNG("images/blue.png");
+    img_yellow.LoadPNG("images/yellow.png");
+    img_cyan.LoadPNG("images/cyan.png");
+    img_pink.LoadPNG("images/pink.png");
 
     // Toolbar positioning: place icons at the bottom of the screen
-    int y = (int)framebuffer.height - 50; // simple fixed bar height
+    int y = 10; // simple fixed bar height
     int x = 10;
     int step = 45;
 
@@ -87,7 +87,7 @@ void Application::Render()
     framebuffer.DrawImage(canvas, 0, 0);
 
     // 2) If user is dragging, show a preview for shapes (line/rect/triangle)
-    if (app_mode == 1 && isDrawing)
+    if (mode == 1 && isDrawing)
     {
         if (currentTool == TOOL_LINE)
         {
@@ -163,7 +163,7 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
     if (event.button != SDL_BUTTON_LEFT)
         return;
 
-    Vector2 mouse((float)event.x, (float)event.y);
+    Vector2 mouse((float)event.x, (float)(framebuffer.height - 1 - event.y));
 
     // 1) Check if we clicked a toolbar button
     for (const Button& b : buttons)
@@ -177,7 +177,7 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
             else if (b.type == BTN_RECT) currentTool = TOOL_RECT;
             else if (b.type == BTN_TRIANGLE) currentTool = TOOL_TRIANGLE;
             else if (b.type == BTN_CLEAR) canvas.Fill(Color::BLACK);
-            else if (b.type == BTN_LOAD)  canvas.LoadPNG("res/images/fruits.png"); // simple demo load
+            else if (b.type == BTN_LOAD)  canvas.LoadPNG("images/fruits.png"); // simple demo load
             else if (b.type == BTN_SAVE)  canvas.SaveTGA("my_paint.tga");          // simple demo save
 
             // Color selection
@@ -212,6 +212,8 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 {
     if (event.button != SDL_BUTTON_LEFT)
         return;
+    
+    Vector2 mouse((float)event.x, (float)(framebuffer.height - 1 - event.y));
 
     if (!isDrawing)
         return;
@@ -228,7 +230,8 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
         int w = (int)std::abs(mouse_position.x - startPos.x);
         int h = (int)std::abs(mouse_position.y - startPos.y);
 
-        canvas.DrawRect(x, y, w, h, currentColor, borderWidth, fillShapes, currentColor);
+        Color border= Color(255,255,255); // fixed border color always to make it visible
+        canvas.DrawRect(x, y, w, h, border, borderWidth, fillShapes, currentColor);
     }
     else if (currentTool == TOOL_TRIANGLE)
     {
@@ -246,23 +249,27 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 
 void Application::OnMouseMove(SDL_MouseButtonEvent event)
 {
-    mouse_position = Vector2((float)event.x, (float)event.y);
+    mouse_position = Vector2((float)event.x, (float)(framebuffer.height - 1 - event.y));
 
     if (!isDrawing)
         return;
 
-    // Pencil/eraser: draw small line segments while dragging (paint-like)
     if (currentTool == TOOL_PENCIL)
     {
-        canvas.DrawLineDDA((int)lastPos.x, (int)lastPos.y, (int)mouse_position.x, (int)mouse_position.y, currentColor);
+        canvas.DrawLineDDA((int)lastPos.x, (int)lastPos.y,
+                           (int)mouse_position.x, (int)mouse_position.y,
+                           currentColor);
         lastPos = mouse_position;
     }
     else if (currentTool == TOOL_ERASER)
     {
-        canvas.DrawLineDDA((int)lastPos.x, (int)lastPos.y, (int)mouse_position.x, (int)mouse_position.y, Color::BLACK);
+        canvas.DrawLineDDA((int)lastPos.x, (int)lastPos.y,
+                           (int)mouse_position.x, (int)mouse_position.y,
+                           Color::BLACK);
         lastPos = mouse_position;
     }
 }
+
 
 
 void Application::OnWheel(SDL_MouseWheelEvent event)

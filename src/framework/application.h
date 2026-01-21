@@ -40,6 +40,11 @@ public:
 
     // UI buttons (toolbar)
     std::vector<Button> buttons;
+    
+    // Icons persistent
+    Image img_pencil, img_eraser, img_line, img_rect, img_tri;
+    Image img_clear, img_load, img_save;
+    Image img_black, img_white, img_red, img_green, img_blue, img_yellow, img_cyan, img_pink;
 
 
 	// Input
