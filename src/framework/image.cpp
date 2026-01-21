@@ -580,23 +580,10 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
 
 void Image::DrawImage(const Image& img, int x, int y)
 {
-    // Copy pixels from img to this image at (x,y) position
-    // This is used to draw UI icons- toolbar
-
-    for (int j = 0; j < (int)img.height; ++j)
-    {
-        for (int i = 0; i < (int)img.width; ++i)
-        {
-            int dstx = x + i;
-            int dsty = y + j;
-
-            // Avoid writing out of framebuffer memory
-            if (dstx < 0 || dstx >= (int)width || dsty < 0 || dsty >= (int)height)
-                continue;
-
-            Color c = img.GetPixel((unsigned)i, (unsigned)j);
-            SetPixel((unsigned)dstx, (unsigned)dsty, c);
+    for (int j = 0; j < img.height; ++j){
+        for (int i = 0; i < img.width; ++i){
+            Color c = img.GetPixel(i, j);
+            SetPixel(x + i, y + j, c);
         }
     }
 }
-

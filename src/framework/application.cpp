@@ -211,7 +211,7 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
             else if (b.type == BTN_RECT) currentTool = TOOL_RECT;
             else if (b.type == BTN_TRIANGLE) currentTool = TOOL_TRIANGLE;
             else if (b.type == BTN_CLEAR) canvas.Fill(Color::BLACK);
-            else if (b.type == BTN_LOAD)  canvas.LoadPNG("images/fruits.png");
+            else if (b.type == BTN_LOAD)  canvas.LoadTGA("my_paint.tga");
             else if (b.type == BTN_SAVE)  canvas.SaveTGA("my_paint.tga");
 
             // Color selection
