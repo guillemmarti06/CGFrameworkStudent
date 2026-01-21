@@ -265,8 +265,7 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
         int w = (int)std::abs(mouse_position.x - startPos.x);
         int h = (int)std::abs(mouse_position.y - startPos.y);
 
-        Color border= Color(255,255,255); // fixed border color always to make it visible (even with filled shapes)
-        canvas.DrawRect(x, y, w, h, border, borderWidth, fillShapes, currentColor);
+        canvas.DrawRect(x, y, w, h, currentColor, borderWidth, fillShapes, currentColor);
     }
     else if (currentTool == TOOL_TRIANGLE)
     {
