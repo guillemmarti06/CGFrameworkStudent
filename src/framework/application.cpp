@@ -31,8 +31,8 @@ void Application::Init(void)
     canvas.Resize(framebuffer.width, framebuffer.height);
     canvas.Fill(Color::BLACK);
 
-    // Load UI icons (stored inside /res/images
-    // IMPORTANT: here we pass "images/..." (NOT "res/images/...") because utils already adds /res.
+    // Load UI icons (stored inside /res/images)
+    // here we pass "images/..." (NOT "res/images/...") because utils already adds /res.
     img_pencil.LoadPNG("images/pencil.png");
     img_eraser.LoadPNG("images/eraser.png");
     img_line.LoadPNG("images/line.png");
@@ -227,6 +227,27 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
             return; // do not start drawing if we clicked UI
         }
     }
+    
+    // TRIANGLE with 3 clicks
+    if (currentTool == TOOL_TRIANGLE)
+    {
+        if (triangleClicks == 0)      { triA = mouse; triangleClicks = 1; }
+        else if (triangleClicks == 1) { triB = mouse; triangleClicks = 2; }
+        else // triangleClicks == 2
+        {
+            triC = mouse;
+
+            // Draw triangle directly to the canvas
+            canvas.DrawTriangle(triA, triB, triC, currentColor, fillShapes, currentColor);
+
+            // Reset to start a new triangle
+            triangleClicks = 0;
+        }
+
+        // do not start drag drawing
+        isDrawing = false;
+        return;
+    }
 
     // 2- Start drawing on canvas
     isDrawing = true;
@@ -266,15 +287,6 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
         int h = (int)std::abs(mouse_position.y - startPos.y);
 
         canvas.DrawRect(x, y, w, h, currentColor, borderWidth, fillShapes, currentColor);
-    }
-    else if (currentTool == TOOL_TRIANGLE)
-    {
-        Vector2 a = startPos;
-        Vector2 b = mouse_position;
-        Vector2 mid((a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f);
-        Vector2 c(mid.x, mid.y - 80.0f);
-
-        canvas.DrawTriangle(a, b, c, Color(255,255,255), fillShapes, currentColor);
     }
 
     isDrawing = false;

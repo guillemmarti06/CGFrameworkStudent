@@ -36,6 +36,11 @@ public:
     // Current selected tool
     enum ToolType { TOOL_PENCIL, TOOL_ERASER, TOOL_LINE, TOOL_RECT, TOOL_TRIANGLE };
     ToolType currentTool = TOOL_PENCIL;
+    
+    // Triangle (3 clicks)
+    int triangleClicks = 0;
+    Vector2 triA, triB, triC;
+
 
     Color currentColor = Color(255, 255, 255); // Default drawing color (white)
 
