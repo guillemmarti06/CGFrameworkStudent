@@ -57,31 +57,33 @@ void Application::Init(void)
     int y = 10;
     int x = 10;
     int step = 45;
-    
+
     // Tools
-    buttons.clear();
-    buttons.push_back(Button(img_pencil, Vector2((float)x, (float)y), BTN_PENCIL)); x += step;
-    buttons.push_back(Button(img_eraser, Vector2((float)x, (float)y), BTN_ERASER)); x += step;
-    buttons.push_back(Button(img_line,   Vector2((float)x, (float)y), BTN_LINE));   x += step;
-    buttons.push_back(Button(img_rect,   Vector2((float)x, (float)y), BTN_RECT));   x += step;
-    buttons.push_back(Button(img_tri,    Vector2((float)x, (float)y), BTN_TRIANGLE)); x += step;
+    btn_pencil   = Button(img_pencil, Vector2(x, y), BTN_PENCIL);   x += step;
+    btn_eraser   = Button(img_eraser, Vector2(x, y), BTN_ERASER);   x += step;
+    btn_line     = Button(img_line,   Vector2(x, y), BTN_LINE);     x += step;
+    btn_rect     = Button(img_rect,   Vector2(x, y), BTN_RECT);     x += step;
+    btn_triangle = Button(img_tri,    Vector2(x, y), BTN_TRIANGLE); x += step;
 
-    // Utilities (clear, load, save)
-    x += 20; // small gap
-    buttons.push_back(Button(img_clear,  Vector2((float)x, (float)y), BTN_CLEAR)); x += step;
-    buttons.push_back(Button(img_load,   Vector2((float)x, (float)y), BTN_LOAD));  x += step;
-    buttons.push_back(Button(img_save,   Vector2((float)x, (float)y), BTN_SAVE));  x += step;
+    x += 20; // gap
 
-    // colors
-    x += 20; //another small visual gap
-    buttons.push_back(Button(img_black,  Vector2((float)x, (float)y), BTN_COLOR_BLACK)); x += step;
-    buttons.push_back(Button(img_white,  Vector2((float)x, (float)y), BTN_COLOR_WHITE)); x += step;
-    buttons.push_back(Button(img_red,    Vector2((float)x, (float)y), BTN_COLOR_RED)); x += step;
-    buttons.push_back(Button(img_green,  Vector2((float)x, (float)y), BTN_COLOR_GREEN)); x += step;
-    buttons.push_back(Button(img_blue,   Vector2((float)x, (float)y), BTN_COLOR_BLUE)); x += step;
-    buttons.push_back(Button(img_yellow, Vector2((float)x, (float)y), BTN_COLOR_YELLOW)); x += step;
-    buttons.push_back(Button(img_cyan,   Vector2((float)x, (float)y), BTN_COLOR_CYAN)); x += step;
-    buttons.push_back(Button(img_pink,   Vector2((float)x, (float)y), BTN_COLOR_PINK)); x += step;
+    // Utilities
+    btn_clear = Button(img_clear, Vector2(x, y), BTN_CLEAR); x += step;
+    btn_load  = Button(img_load,  Vector2(x, y), BTN_LOAD);  x += step;
+    btn_save  = Button(img_save,  Vector2(x, y), BTN_SAVE);  x += step;
+
+    x += 20; // gap
+
+    // Colors
+    btn_black  = Button(img_black,  Vector2(x, y), BTN_COLOR_BLACK);  x += step;
+    btn_white  = Button(img_white,  Vector2(x, y), BTN_COLOR_WHITE);  x += step;
+    btn_red    = Button(img_red,    Vector2(x, y), BTN_COLOR_RED);    x += step;
+    btn_green  = Button(img_green,  Vector2(x, y), BTN_COLOR_GREEN);  x += step;
+    btn_blue   = Button(img_blue,   Vector2(x, y), BTN_COLOR_BLUE);   x += step;
+    btn_yellow = Button(img_yellow, Vector2(x, y), BTN_COLOR_YELLOW); x += step;
+    btn_cyan   = Button(img_cyan,   Vector2(x, y), BTN_COLOR_CYAN);   x += step;
+    btn_pink   = Button(img_pink,   Vector2(x, y), BTN_COLOR_PINK);   x += step;
+
     
     // Animation system init (we want it ready even if we start in paint mode)
     particleSystem.Init(framebuffer.width, framebuffer.height);
@@ -120,9 +122,7 @@ void Application::Render()
                 }
                 else if (currentTool == TOOL_TRIANGLE)
                 {
-                    // Simple triangle preview:
-                    // A = start, B = current mouse, C = point above the midpoint.
-                    // It's not perfect geometry, but it's super easy to control with only 2 mouse points
+                    // Simple triangle preview
                     Vector2 a = startPos;
                     Vector2 b = mouse_position;
                     Vector2 mid((a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f);
@@ -131,8 +131,25 @@ void Application::Render()
                 }
             }
             // draw UI icons on top of everything (so always visible)
-            for (const Button& b : buttons)
-                b.Render(framebuffer);
+            btn_pencil.Render(framebuffer);
+            btn_eraser.Render(framebuffer);
+            btn_line.Render(framebuffer);
+            btn_rect.Render(framebuffer);
+            btn_triangle.Render(framebuffer);
+
+            btn_clear.Render(framebuffer);
+            btn_load.Render(framebuffer);
+            btn_save.Render(framebuffer);
+
+            btn_black.Render(framebuffer);
+            btn_white.Render(framebuffer);
+            btn_red.Render(framebuffer);
+            btn_green.Render(framebuffer);
+            btn_blue.Render(framebuffer);
+            btn_yellow.Render(framebuffer);
+            btn_cyan.Render(framebuffer);
+            btn_pink.Render(framebuffer);
+
         }
         break;
 
@@ -197,36 +214,59 @@ void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
     
     // SDL mouse Y goes downwards, but our drawing ended up being upside-down,
     // so we flip Y here to match framebuffer coordinates.
-    Vector2 mouse((float)event.x, (float)(framebuffer.height - 1 - event.y));
+    Vector2 mouse(event.x, (framebuffer.height - 1 - event.y));
 
     // 1- Check if we clicked a toolbar button
-    for (const Button& b : buttons)
+    Button* clicked = nullptr;
+
+    if      (btn_pencil.IsMouseInside(mouse))   clicked = &btn_pencil;
+    else if (btn_eraser.IsMouseInside(mouse))   clicked = &btn_eraser;
+    else if (btn_line.IsMouseInside(mouse))     clicked = &btn_line;
+    else if (btn_rect.IsMouseInside(mouse))     clicked = &btn_rect;
+    else if (btn_triangle.IsMouseInside(mouse)) clicked = &btn_triangle;
+
+    else if (btn_clear.IsMouseInside(mouse))    clicked = &btn_clear;
+    else if (btn_load.IsMouseInside(mouse))     clicked = &btn_load;
+    else if (btn_save.IsMouseInside(mouse))     clicked = &btn_save;
+
+    else if (btn_black.IsMouseInside(mouse))    clicked = &btn_black;
+    else if (btn_white.IsMouseInside(mouse))    clicked = &btn_white;
+    else if (btn_red.IsMouseInside(mouse))      clicked = &btn_red;
+    else if (btn_green.IsMouseInside(mouse))    clicked = &btn_green;
+    else if (btn_blue.IsMouseInside(mouse))     clicked = &btn_blue;
+    else if (btn_yellow.IsMouseInside(mouse))   clicked = &btn_yellow;
+    else if (btn_cyan.IsMouseInside(mouse))     clicked = &btn_cyan;
+    else if (btn_pink.IsMouseInside(mouse))     clicked = &btn_pink;
+
+    if (clicked)
     {
-        if (b.IsMouseInside(mouse))
-        {
-            // Handle button action
-            if (b.type == BTN_PENCIL) currentTool = TOOL_PENCIL;
-            else if (b.type == BTN_ERASER) currentTool = TOOL_ERASER;
-            else if (b.type == BTN_LINE) currentTool = TOOL_LINE;
-            else if (b.type == BTN_RECT) currentTool = TOOL_RECT;
-            else if (b.type == BTN_TRIANGLE) currentTool = TOOL_TRIANGLE;
-            else if (b.type == BTN_CLEAR) canvas.Fill(Color::BLACK);
-            else if (b.type == BTN_LOAD)  canvas.LoadTGA("my_paint.tga");
-            else if (b.type == BTN_SAVE)  canvas.SaveTGA("my_paint.tga");
+        ButtonType t = clicked->type;
 
-            // Color selection
-            else if (b.type == BTN_COLOR_BLACK)  currentColor = Color(0,0,0);
-            else if (b.type == BTN_COLOR_WHITE)  currentColor = Color(255,255,255);
-            else if (b.type == BTN_COLOR_RED)    currentColor = Color(255,0,0);
-            else if (b.type == BTN_COLOR_GREEN)  currentColor = Color(0,255,0);
-            else if (b.type == BTN_COLOR_BLUE)   currentColor = Color(0,0,255);
-            else if (b.type == BTN_COLOR_YELLOW) currentColor = Color(255,255,0);
-            else if (b.type == BTN_COLOR_CYAN)   currentColor = Color(0,255,255);
-            else if (b.type == BTN_COLOR_PINK)   currentColor = Color(255,0,255);
+        // Tools
+        if (t == BTN_PENCIL) currentTool = TOOL_PENCIL;
+        else if (t == BTN_ERASER) currentTool = TOOL_ERASER;
+        else if (t == BTN_LINE) currentTool = TOOL_LINE;
+        else if (t == BTN_RECT) currentTool = TOOL_RECT;
+        else if (t == BTN_TRIANGLE) currentTool = TOOL_TRIANGLE;
 
-            return; // do not start drawing if we clicked UI
-        }
+        // Actions
+        else if (t == BTN_CLEAR) canvas.Fill(Color::BLACK);
+        else if (t == BTN_LOAD)  canvas.LoadTGA("my_paint.tga");
+        else if (t == BTN_SAVE)  canvas.SaveTGA("my_paint.tga");
+
+        // Colors
+        else if (t == BTN_COLOR_BLACK)  currentColor = Color(0,0,0);
+        else if (t == BTN_COLOR_WHITE)  currentColor = Color(255,255,255);
+        else if (t == BTN_COLOR_RED)    currentColor = Color(255,0,0);
+        else if (t == BTN_COLOR_GREEN)  currentColor = Color(0,255,0);
+        else if (t == BTN_COLOR_BLUE)   currentColor = Color(0,0,255);
+        else if (t == BTN_COLOR_YELLOW) currentColor = Color(255,255,0);
+        else if (t == BTN_COLOR_CYAN)   currentColor = Color(0,255,255);
+        else if (t == BTN_COLOR_PINK)   currentColor = Color(255,0,255);
+
+        return; // clicked UI -> don't draw
     }
+
     
     // TRIANGLE with 3 clicks
     if (currentTool == TOOL_TRIANGLE)
@@ -269,7 +309,7 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
         return;
     
     // Same Y flip as before (consistency is everything)
-    Vector2 mouse((float)event.x, (float)(framebuffer.height - 1 - event.y));
+    Vector2 mouse(event.x, (framebuffer.height - 1 - event.y));
 
     if (!isDrawing)
         return;
@@ -277,7 +317,7 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
     // When releasing the mouse, we commit the shape into the canvas
     if (currentTool == TOOL_LINE)
     {
-        canvas.DrawLineDDA((int)startPos.x, (int)startPos.y, (int)mouse_position.x, (int)mouse_position.y, currentColor);
+        canvas.DrawLineDDA(startPos.x, startPos.y, mouse_position.x, mouse_position.y, currentColor);
     }
     else if (currentTool == TOOL_RECT)
     {
@@ -296,7 +336,7 @@ void Application::OnMouseButtonUp(SDL_MouseButtonEvent event)
 void Application::OnMouseMove(SDL_MouseButtonEvent event)
 {
     // Keep mouse_position updated in the same coordinate system as drawing
-    mouse_position = Vector2((float)event.x, (float)(framebuffer.height - 1 - event.y));
+    mouse_position = Vector2(event.x, (framebuffer.height - 1 - event.y));
 
     if (!isDrawing)
         return;
@@ -304,16 +344,12 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event)
     // Pencil/eraser: paint continuously while dragging (we connect lastPos with the currentPos)
     if (currentTool == TOOL_PENCIL)
     {
-        canvas.DrawLineDDA((int)lastPos.x, (int)lastPos.y,
-                           (int)mouse_position.x, (int)mouse_position.y,
-                           currentColor);
+        canvas.DrawLineDDA(lastPos.x, lastPos.y, mouse_position.x, mouse_position.y, currentColor);
         lastPos = mouse_position;
     }
     else if (currentTool == TOOL_ERASER)
     {
-        canvas.DrawLineDDA((int)lastPos.x, (int)lastPos.y,
-                           (int)mouse_position.x, (int)mouse_position.y,
-                           Color::BLACK);
+        canvas.DrawLineDDA(lastPos.x, lastPos.y, mouse_position.x, mouse_position.y, Color::BLACK);
         lastPos = mouse_position;
     }
 }

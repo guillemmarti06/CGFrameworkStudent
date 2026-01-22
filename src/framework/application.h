@@ -45,7 +45,10 @@ public:
     Color currentColor = Color(255, 255, 255); // Default drawing color (white)
 
     // UI buttons (toolbar)
-    std::vector<Button> buttons;
+    Button btn_pencil, btn_eraser, btn_line, btn_rect, btn_triangle;
+    Button btn_clear, btn_load, btn_save;
+    Button btn_black, btn_white, btn_red, btn_green, btn_blue, btn_yellow, btn_cyan, btn_pink;
+
     
     // Icons persistent
     Image img_pencil, img_eraser, img_line, img_rect, img_tri;
