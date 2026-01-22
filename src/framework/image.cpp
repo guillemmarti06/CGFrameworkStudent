@@ -208,7 +208,7 @@ bool Image::LoadTGA(const char* filename, bool flip_y)
 		memcmp(TGAheader, TGAcompare, sizeof(TGAheader)) != 0 ||
 		fread(header, 1, sizeof(header), file) != sizeof(header))
 	{
-		std::cerr << "--- File not found: " << sfullPath.c_str() << std::endl;
+		std::cerr << "File not found: " << sfullPath.c_str() << std::endl;
 		if (file == NULL)
 			return NULL;
 		else
@@ -487,8 +487,8 @@ void Image::DrawRect(int x, int y, int w, int h, const Color& borderColor, int b
 
 // Each row stores the minX and maxX covered by the triangle at that height (struct from slides)
 struct Cell{
-    int minx = std::numeric_limits<int>::max();
-    int maxx = std::numeric_limits<int>::min();
+    int minx = INT_MAX;
+    int maxx = INT_MIN;
 };
 
 // Modified DDA: instead of painting pixels we update table[y].minx / maxx
