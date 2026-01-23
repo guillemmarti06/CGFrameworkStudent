@@ -35,7 +35,7 @@ ParticleSystem::Particle ParticleSystem::CreateParticle()
     p.velocity = Vector2(vx, vy) * speed;
 
     // Small acceleration to make the motion more "alive"
-    p.acceleration = frand(10.f, 80.f); // acelera un poco
+    p.acceleration = frand(10.f, 80.f); // accelerates a bit
     p.ttl = frand(1.0f, 2.5f);
 
     // Random brighty color to look like stars
