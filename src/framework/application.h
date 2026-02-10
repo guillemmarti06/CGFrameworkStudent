@@ -107,7 +107,7 @@ public:
     Mesh* lee_mesh = nullptr;
     
     Camera camera;
-    int mode = 0; // 0: single entity, 1: multiple entities
+    int mode = 1; // Lab2 menu: 1 single, 2 multiple
 
     bool orbiting = false; // LMB
     bool panning  = false; // RMB

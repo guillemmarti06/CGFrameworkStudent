@@ -45,10 +45,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c)
         float x = (p.x * 0.5f + 0.5f) * (float)(framebuffer->width  - 1);
         float y = (p.y * 0.5f + 0.5f) * (float)(framebuffer->height - 1);
 
-        // Our framebuffer coordinates have (0,0) at bottom-left in your paint system,
-        // so we flip Y to match that convention.
-        y = (float)(framebuffer->height - 1) - y;
-
+        // IMPORTANT: do NOT flip Y here (glDrawPixels style coordinates)
         return Vector2(x, y);
     };
 
