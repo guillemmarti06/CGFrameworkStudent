@@ -9,6 +9,9 @@
 #include "image.h"
 #include "button.h"
 #include "ParticleSystem.h"
+#include "mesh.h"
+#include "camera.h"
+#include "entity.h"
 
 class Application
 {
@@ -21,7 +24,6 @@ public:
 	int window_height;
 
 	float time;
-    int mode = 1;  // Start with mode 1
     int borderWidth = 5;   // initial border thickness (for example)
     bool fillShapes = true;  // toggled with F
     
@@ -97,4 +99,22 @@ public:
 		SDL_GetWindowSize(window,&w,&h);
 		return Vector2(float(w), float(h));
 	}
+    
+    Entity* single = nullptr;
+    Entity* e1 = nullptr;
+    Entity* e2 = nullptr;
+    Entity* e3 = nullptr;
+    Mesh* lee_mesh = nullptr;
+    
+    Camera camera;
+    int mode = 0; // 0: single entity, 1: multiple entities
+
+    bool orbiting = false; // LMB
+    bool panning  = false; // RMB
+    Vector2 last_mouse;
+
+    // Camera property to edit with N/F/V and +/- (simple)
+    enum CameraProp { PROP_NEAR, PROP_FAR, PROP_FOV };
+    CameraProp cam_prop = PROP_NEAR;
+    
 };

@@ -4,75 +4,102 @@
 //
 //  Created by GUILLEM on 10/2/26.
 //
-#include "entity.hpp"
-#include <cmath>
 
+#include "entity.h"
+#include "mesh.h"
+
+// Constructor: initialize pointers and set identity matrix
 Entity::Entity()
 {
+    mesh = nullptr;
     model.SetIdentity();
+    base_position = Vector3(0,0,0);
+    base_scale = 1.0f;
+    speed = 1.0f;
+}
+
+// Destructor: we do NOT delete mesh here on purpose.
+Entity::~Entity()
+{
+}
+
+void Entity::Render(Image* framebuffer, Camera* camera, const Color& c)
+{
+    if (!framebuffer || !camera || !mesh)
+        return;
+
+    // Mesh vertices are stored as triangles: every 3 vertices = 1 triangle
+    const std::vector<Vector3>& v = mesh->GetVertices();
+    if (v.empty())
+        return;
+
+    // Helper: check if a projected vertex is inside the clip cube [-1,1]^3
+    auto isInsideClipCube = [](const Vector3& p) -> bool {
+        return (p.x >= -1.0f && p.x <= 1.0f &&
+                p.y >= -1.0f && p.y <= 1.0f &&
+                p.z >= -1.0f && p.z <= 1.0f);
+    };
+
+    // convert clip space [-1,1] to screen pixels [0..width-1, 0..height-1]
+    auto clipToScreen = [framebuffer](const Vector3& p) -> Vector2 {
+        float x = (p.x * 0.5f + 0.5f) * (float)(framebuffer->width  - 1);
+        float y = (p.y * 0.5f + 0.5f) * (float)(framebuffer->height - 1);
+
+        // Our framebuffer coordinates have (0,0) at bottom-left in your paint system,
+        // so we flip Y to match that convention.
+        y = (float)(framebuffer->height - 1) - y;
+
+        return Vector2(x, y);
+    };
+
+    // Iterate triangles
+    for (size_t i = 0; i + 2 < v.size(); i += 3)
+    {
+        // 1) Local -> World using model matrix
+        Vector3 w0 = model * v[i + 0];
+        Vector3 w1 = model * v[i + 1];
+        Vector3 w2 = model * v[i + 2];
+
+        // 2) World -> Clip (NDC) using camera viewprojection matrix
+        // (Camera::ProjectVector already divides by w for perspective)
+        Vector3 p0 = camera->ProjectVector(w0);
+        Vector3 p1 = camera->ProjectVector(w1);
+        Vector3 p2 = camera->ProjectVector(w2);
+
+        // 3) Reject triangles outside the clip cube [-1,1]^3 (simple approach, no clipping)
+        if (!isInsideClipCube(p0) || !isInsideClipCube(p1) || !isInsideClipCube(p2))
+            continue;
+
+        // 4) Clip -> Screen
+        Vector2 s0 = clipToScreen(p0);
+        Vector2 s1 = clipToScreen(p1);
+        Vector2 s2 = clipToScreen(p2);
+
+        // 5) Draw wireframe triangle with DDA lines (from Lab 1)
+        framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, c);
+        framebuffer->DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, c);
+        framebuffer->DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, c);
+    }
 }
 
 void Entity::Update(float seconds_elapsed)
 {
-    if (!animated)
-        return;
+    // A very simple time accumulator
+    static float global_time = 0.0f;
+    global_time += seconds_elapsed;
 
-    time_accum += seconds_elapsed;
+    float t = global_time * speed;
 
-    Matrix44 R;
-    R.MakeRotationMatrix(time_accum * rotation_speed, Vector3(0.0f, 1.0f, 0.0f));
+    // Build model matrix using TRS
+    Matrix44 T, R, S;
 
-    Matrix44 T;
-    T.MakeTranslationMatrix(0.0f, sinf(time_accum) * 0.25f, 0.0f);
+    float y = sinf(t) * 0.2f;                 // translate up/down
+    float angle = t;                          // rotate over time
+    float scale = base_scale * (1.0f + 0.2f * sinf(t));  // scale oscillation
 
-    model = T * R;
-}
+    T.MakeTranslationMatrix(base_position.x, base_position.y + y, base_position.z);
+    R.MakeRotationMatrix(angle, Vector3(0,1,0));
+    S.MakeScaleMatrix(scale, scale, scale);
 
-bool Entity::InsideClipCube(const Vector3& p)
-{
-    return (p.x >= -1.0f && p.x <= 1.0f &&
-            p.y >= -1.0f && p.y <= 1.0f &&
-            p.z >= -1.0f && p.z <= 1.0f);
-}
-
-Vector2 Entity::ClipToScreen(const Vector3& clip_pos, int w, int h)
-{
-    Vector2 s;
-    s.x = (clip_pos.x * 0.5f + 0.5f) * float(w - 1);
-    s.y = (clip_pos.y * 0.5f + 0.5f) * float(h - 1);
-    return s;
-}
-
-void Entity::RenderWireframe(Image& framebuffer, Camera& camera, const Color& color) const
-{
-    // IMPORTANT: requires const overload of Mesh::GetVertices() in mesh.h
-    const std::vector<Vector3>& verts = mesh.GetVertices();
-    if (verts.size() < 3)
-        return;
-
-    const int W = framebuffer.width;
-    const int H = framebuffer.height;
-
-    for (size_t i = 0; i + 2 < verts.size(); i += 3)
-    {
-        Vector3 v0_world = model * verts[i + 0];
-        Vector3 v1_world = model * verts[i + 1];
-        Vector3 v2_world = model * verts[i + 2];
-
-        Vector3 p0 = camera.ProjectVector(v0_world);
-        Vector3 p1 = camera.ProjectVector(v1_world);
-        Vector3 p2 = camera.ProjectVector(v2_world);
-
-        // Clip-test in [-1,1]^3
-        if (!InsideClipCube(p0) || !InsideClipCube(p1) || !InsideClipCube(p2))
-            continue;
-
-        Vector2 s0 = ClipToScreen(p0, W, H);
-        Vector2 s1 = ClipToScreen(p1, W, H);
-        Vector2 s2 = ClipToScreen(p2, W, H);
-
-        framebuffer.DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, color);
-        framebuffer.DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, color);
-        framebuffer.DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, color);
-    }
+    model = T * R * S;
 }

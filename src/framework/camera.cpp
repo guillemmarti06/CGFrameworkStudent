@@ -80,47 +80,95 @@ void Camera::LookAt(const Vector3& eye, const Vector3& center, const Vector3& up
 	UpdateViewMatrix();
 }
 
+// Helper functions
+
+float clampf(float v, float minv, float maxv)
+{
+    if (v < minv) return minv;
+    if (v > maxv) return maxv;
+    return v;
+}
+
 void Camera::UpdateViewMatrix()
 {
-	// Reset Matrix (Identity)
-	view_matrix.SetIdentity();
+    // Reset Matrix (Identity)
+    view_matrix.SetIdentity();
 
-	// Comment this line to create your own projection matrix!
-	SetExampleViewMatrix();
+    // Create the view matrix manually
 
-	// Remember how to fill a Matrix4x4 (check framework slides)
-	// Careful with the order of matrix multiplications, and be sure to use normalized vectors!
-	
-	// Create the view matrix rotation
-	// ...
-	// view_matrix.M[3][3] = 1.0;
+    // Camera basis
+    Vector3 forward = (center - eye);
+    forward.Normalize();
 
-	// Translate view matrix
-	// ...
+    Vector3 right = forward.Cross(up);
+    right.Normalize();
 
-	UpdateViewProjectionMatrix();
+    Vector3 new_up = right.Cross(forward);
+    new_up.Normalize();
+
+    // Fill view matrix
+    view_matrix.m[0] = right.x;
+    view_matrix.m[1] = right.y;
+    view_matrix.m[2] = right.z;
+    view_matrix.m[3] = 0.0f;
+
+    view_matrix.m[4] = new_up.x;
+    view_matrix.m[5] = new_up.y;
+    view_matrix.m[6] = new_up.z;
+    view_matrix.m[7] = 0.0f;
+
+    view_matrix.m[8]  = -forward.x;
+    view_matrix.m[9]  = -forward.y;
+    view_matrix.m[10] = -forward.z;
+    view_matrix.m[11] = 0.0f;
+
+    // Translation part
+    view_matrix.m[12] = -right.Dot(eye);
+    view_matrix.m[13] = -new_up.Dot(eye);
+    view_matrix.m[14] =  forward.Dot(eye);
+    view_matrix.m[15] = 1.0f;
+
+    UpdateViewProjectionMatrix();
 }
 
 // Create a projection matrix
 void Camera::UpdateProjectionMatrix()
 {
-	// Reset Matrix (Identity)
-	projection_matrix.SetIdentity();
+    // Reset Matrix (Identity)
+    projection_matrix.SetIdentity();
 
-	// Comment this line to create your own projection matrix!
-	SetExampleProjectionMatrix();
+    // Create the projection matrix manually
 
-	// Remember how to fill a Matrix4x4 (check framework slides)
-	
-	if (type == PERSPECTIVE) {
-		// projection_matrix.M[2][3] = -1;
-		// ...
-	}
-	else if (type == ORTHOGRAPHIC) {
-		// ...
-	} 
+    if (type == PERSPECTIVE)
+    {
+        // Standard OpenGL perspective matrix
+        float f = 1.0f / tanf(fov * 0.5f); // fov is in radians
 
-	UpdateViewProjectionMatrix();
+        // Clear first (to avoid old identity values)
+        for (int i = 0; i < 16; ++i) projection_matrix.m[i] = 0.0f;
+
+        projection_matrix.m[0]  = f / aspect;
+        projection_matrix.m[5]  = f;
+        projection_matrix.m[10] = (far_plane + near_plane) / (near_plane - far_plane);
+        projection_matrix.m[11] = -1.0f;
+        projection_matrix.m[14] = (2.0f * far_plane * near_plane) / (near_plane - far_plane);
+        projection_matrix.m[15] = 0.0f;
+    }
+    else if (type == ORTHOGRAPHIC)
+    {
+        // Keep orthographic working too
+        for (int i = 0; i < 16; ++i) projection_matrix.m[i] = 0.0f;
+
+        projection_matrix.m[0]  = 2.0f / (right - left);
+        projection_matrix.m[5]  = 2.0f / (top - bottom);
+        projection_matrix.m[10] = -2.0f / (far_plane - near_plane);
+        projection_matrix.m[12] = -(right + left) / (right - left);
+        projection_matrix.m[13] = -(top + bottom) / (top - bottom);
+        projection_matrix.m[14] = -(far_plane + near_plane) / (far_plane - near_plane);
+        projection_matrix.m[15] = 1.0f;
+    }
+
+    UpdateViewProjectionMatrix();
 }
 
 void Camera::UpdateViewProjectionMatrix()

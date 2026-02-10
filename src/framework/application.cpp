@@ -1,7 +1,9 @@
 #include "application.h"
 #include "mesh.h"
 #include "shader.h"
-#include "utils.h" 
+#include "utils.h"
+#include "camera.h"
+#include "entity.h"
 
 Application::Application(const char* caption, int width, int height)
 {
@@ -87,80 +89,79 @@ void Application::Init(void)
     
     // Animation system init (we want it ready even if we start in paint mode)
     particleSystem.Init(framebuffer.width, framebuffer.height);
+    
+    // Create one Entity with a mesh and a model matrix
+    Entity* entity = new Entity();
+    // Load a mesh from an OBJ
+    Mesh* mesh = new Mesh();
+    mesh->LoadOBJ("meshes/lee.obj");
+    // Assign mesh to entity
+    entity->mesh = mesh;
+    // Assign a model matrix
+    entity->model.MakeTranslationMatrix(0.0f, 0.0f, 0.0f);
+    
+    lee_mesh = new Mesh();
+    lee_mesh->LoadOBJ("meshes/lee.obj");
+
+    e1 = new Entity();
+    e1->mesh = lee_mesh;
+    e1->base_position = Vector3(-1.5f, 0.0f, 0.0f);
+    e1->base_scale = 1.0f;
+    e1->speed = 1.0f;
+
+    e2 = new Entity();
+    e2->mesh = lee_mesh;
+    e2->base_position = Vector3(1.5f, 0.0f, 0.0f);
+    e2->base_scale = 1.0f;
+    e2->speed = 1.3f;
+
+    e3 = new Entity();
+    e3->mesh = lee_mesh;
+    e3->base_position = Vector3(0.0f, -0.5f, -1.0f);
+    e3->base_scale = 0.6f;
+    e3->speed = 0.8f;
+    
+    // Camera init
+    camera.type = Camera::PERSPECTIVE;
+    camera.aspect = (float)framebuffer.width / (float)framebuffer.height;
+    camera.fov = 60.0f * DEG2RAD;
+    camera.near_plane = 0.1f;
+    camera.far_plane = 1000.0f;
+
+    camera.center = Vector3(0, 1, 0);
+    camera.up = Vector3(0, 1, 0);
+
+    // orbit params (you must have added these in camera.h)
+    camera.yaw = 0.0f;
+    camera.pitch = 0.0f;
+    camera.distance = 5.0f;
+
+    // compute eye
+    camera.eye.x = camera.center.x + cosf(camera.pitch) * sinf(camera.yaw) * camera.distance;
+    camera.eye.y = camera.center.y + sinf(camera.pitch) * camera.distance;
+    camera.eye.z = camera.center.z + cosf(camera.pitch) * cosf(camera.yaw) * camera.distance;
+
+    camera.UpdateViewMatrix();
+    camera.UpdateProjectionMatrix();
+    camera.UpdateViewProjectionMatrix();
 }
 
 // Render one frame
 void Application::Render()
 {
-    // We always start by clearing the framebuffer
     framebuffer.Fill(Color::BLACK);
 
-    // We kept "mode" as a simple int because it's the easiest, and used "switch" to switch between modes
-    // Mode 1 = Paint, Mode 2 = Animation.
     switch (mode)
     {
-        case 1: // Paint (start with paint, as mode initialized in app.h as mode = 1
-        {
-            framebuffer.DrawImage(canvas, 0, 0);    // Draw everything we already painted
+        case 0: // single entity wireframe
+            if (single) single->Render(&framebuffer, &camera, Color::WHITE);
+            break;
 
-            if (isDrawing)
-            {
-                // depending on the tool, we draw the corresponding shape
-                
-                if (currentTool == TOOL_LINE)
-                    framebuffer.DrawLineDDA((int)startPos.x, (int)startPos.y, (int)mouse_position.x, (int)mouse_position.y, currentColor);
-                else if (currentTool == TOOL_RECT)
-                {
-                    // For rectangles we use min/max so it works no matter the drag direction
-                    int x = (int)std::min(startPos.x, mouse_position.x);
-                    int y = (int)std::min(startPos.y, mouse_position.y);
-                    int w = (int)std::abs(mouse_position.x - startPos.x);
-                    int h = (int)std::abs(mouse_position.y - startPos.y);
-                    
-                    // BorderWidth and fillShapes come from user input (+/- and F)
-                    framebuffer.DrawRect(x, y, w, h, currentColor, borderWidth, fillShapes, currentColor);
-                }
-                else if (currentTool == TOOL_TRIANGLE)
-                {
-                    // Simple triangle preview
-                    Vector2 a = startPos;
-                    Vector2 b = mouse_position;
-                    Vector2 mid((a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f);
-                    Vector2 c(mid.x, mid.y - 80.0f);
-                    framebuffer.DrawTriangle(a, b, c, Color(255,255,255), fillShapes, currentColor);
-                }
-            }
-            // draw UI icons on top of everything (so always visible)
-            btn_pencil.Render(framebuffer);
-            btn_eraser.Render(framebuffer);
-            btn_line.Render(framebuffer);
-            btn_rect.Render(framebuffer);
-            btn_triangle.Render(framebuffer);
-
-            btn_clear.Render(framebuffer);
-            btn_load.Render(framebuffer);
-            btn_save.Render(framebuffer);
-
-            btn_black.Render(framebuffer);
-            btn_white.Render(framebuffer);
-            btn_red.Render(framebuffer);
-            btn_green.Render(framebuffer);
-            btn_blue.Render(framebuffer);
-            btn_yellow.Render(framebuffer);
-            btn_cyan.Render(framebuffer);
-            btn_pink.Render(framebuffer);
-
-        }
-        break;
-
-        case 2: // Animation
-        {
-            // Here we just render particles into the framebuffer
-            particleSystem.Render(&framebuffer);
-        }
-        break;
-
-        default: // If something strange happens, just show a black screen
+        case 1: // multiple animated entities
+        case 2: // same but used to test interactivity
+            if (e1) e1->Render(&framebuffer, &camera, Color::WHITE);
+            if (e2) e2->Render(&framebuffer, &camera, Color::WHITE);
+            if (e3) e3->Render(&framebuffer, &camera, Color::WHITE);
             break;
     }
 
@@ -172,39 +173,59 @@ void Application::Render()
 // Called after render
 void Application::Update(float seconds_elapsed)
 {
-    // Only animate particles in animation mode (no change in paint, keep it stable)
-    if (mode == 2)
-            particleSystem.Update(seconds_elapsed);
+    if (mode == 1 || mode == 2)
+    {
+        if (e1) e1->Update(seconds_elapsed);
+        if (e2) e2->Update(seconds_elapsed);
+        if (e3) e3->Update(seconds_elapsed);
+    }
 }
-
-//keyboard press event 
-void Application::OnKeyPressed( SDL_KeyboardEvent event )
+//keyboard press event
+void Application::OnKeyPressed(SDL_KeyboardEvent event)
 {
-	// KEY CODES: https://wiki.libsdl.org/SDL2/SDL_Keycode
-	switch(event.keysym.sym) {
-		case SDLK_ESCAPE: exit(0); break; // ESC key, kill the app
-            
-        case SDLK_1: mode = 1; break; // Paint
-        case SDLK_2: mode= 2; break; // Animation
-            
-        // Increase border width
+    switch(event.keysym.sym)
+    {
+        case SDLK_ESCAPE: exit(0); break;
+
+        // MENU: switch between exercises/results
+        case SDLK_0: mode = 0; break; // single entity
+        case SDLK_1: mode = 1; break; // multiple animated
+        case SDLK_2: mode = 2; break; // interactivity test
+
+        // Camera property selection
+        case SDLK_n: cam_prop = PROP_NEAR; break;
+        case SDLK_f: cam_prop = PROP_FAR; break;
+        case SDLK_v: cam_prop = PROP_FOV; break;
+
+        // Modify current property
         case SDLK_PLUS:
         case SDLK_KP_PLUS:
-            borderWidth++;
-            break;
+        {
+            if (cam_prop == PROP_NEAR) camera.near_plane += 0.05f;
+            else if (cam_prop == PROP_FAR) camera.far_plane += 1.0f;
+            else if (cam_prop == PROP_FOV) camera.fov += 5.0f * DEG2RAD;
 
-        // Decrease border width
+            if (camera.near_plane < 0.01f) camera.near_plane = 0.01f;
+            if (camera.far_plane < camera.near_plane + 0.01f) camera.far_plane = camera.near_plane + 0.01f;
+
+            camera.UpdateProjectionMatrix();
+            camera.UpdateViewProjectionMatrix();
+        } break;
+
         case SDLK_MINUS:
         case SDLK_KP_MINUS:
-            if (borderWidth > 1)
-                borderWidth--;
-            break;
-            
-        // Fill Shapes toggle
-        case SDLK_f:
-            fillShapes = !fillShapes;
-            break;
-	}
+        {
+            if (cam_prop == PROP_NEAR) camera.near_plane -= 0.05f;
+            else if (cam_prop == PROP_FAR) camera.far_plane -= 1.0f;
+            else if (cam_prop == PROP_FOV) camera.fov -= 5.0f * DEG2RAD;
+
+            if (camera.near_plane < 0.01f) camera.near_plane = 0.01f;
+            if (camera.far_plane < camera.near_plane + 0.01f) camera.far_plane = camera.near_plane + 0.01f;
+
+            camera.UpdateProjectionMatrix();
+            camera.UpdateViewProjectionMatrix();
+        } break;
+    }
 }
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)

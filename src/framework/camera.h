@@ -30,6 +30,11 @@ public:
 	float aspect;		// Aspect ratio (width/height)
 	float near_plane;	// Near plane
 	float far_plane;	// Far plane
+    
+    // Interactivity state (orbit camera)
+    float yaw;        // rotation around Y (radians)
+    float pitch;      // rotation up/down (radians)
+    float distance;   // distance from eye to center
 
 	// For orthogonal projection
 	float left, right, top, bottom;
