@@ -91,6 +91,10 @@ public:
 		this->window_width = width;
 		this->window_height = height;
 		this->framebuffer.Resize(width, height);
+        
+        camera.aspect = (float)width / (float)height;
+        camera.SetPerspective(camera.fov, camera.aspect, camera.near_plane, camera.far_plane);
+        camera.UpdateViewProjectionMatrix();
 	}
 
 	Vector2 GetWindowSize()
@@ -107,7 +111,7 @@ public:
     Mesh* lee_mesh = nullptr;
     
     Camera camera;
-    int mode = 1; // Lab2 menu: 1 single, 2 multiple
+    int mode = 1; // start with single (mode 1)
 
     bool orbiting = false; // LMB
     bool panning  = false; // RMB

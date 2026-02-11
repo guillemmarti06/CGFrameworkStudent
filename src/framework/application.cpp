@@ -28,6 +28,8 @@ Application::~Application()
 void Application::Init(void)
 {
     std::cout << "Initiating app..." << std::endl;
+    
+    // ALL THESE IMAGES AND ANIMATIO IS FROM LAB1!! BUT WE KEPT IT (JUST INITIALIZED, it does not disturb)
 
     // We use a persistent canvas image so the paint stays on screen between frames
     canvas.Resize(framebuffer.width, framebuffer.height);
@@ -94,27 +96,28 @@ void Application::Init(void)
     Mesh* mesh = new Mesh();
     mesh->LoadOBJ("meshes/lee.obj");
     single->mesh = mesh;
-    single->model.MakeTranslationMatrix(0.0f, 0.0f, 0.0f);
+    // we adjusted to 0.8 so that when you zoom you still see the shape correctly
+    single->model.MakeTranslationMatrix(0.0f, 0.8f, 0.0f);
     
     lee_mesh = new Mesh();
     lee_mesh->LoadOBJ("meshes/lee.obj");
 
     e1 = new Entity();
     e1->mesh = lee_mesh;
-    e1->base_position = Vector3(-1.5f, 0.0f, 0.0f);
-    e1->base_scale = 1.0f;
+    e1->base_position = Vector3(-1.5f, 0.8f, 0.0f);
+    e1->base_scale = 1.3f;
     e1->speed = 1.0f;
 
     e2 = new Entity();
     e2->mesh = lee_mesh;
-    e2->base_position = Vector3(1.5f, 0.0f, 0.0f);
-    e2->base_scale = 1.0f;
+    e2->base_position = Vector3(1.5f, 0.8f, 0.0f);
+    e2->base_scale = 1.3f;
     e2->speed = 1.3f;
 
     e3 = new Entity();
     e3->mesh = lee_mesh;
-    e3->base_position = Vector3(0.0f, -0.5f, -1.0f);
-    e3->base_scale = 0.6f;
+    e3->base_position = Vector3(0.0f, 0.5f, -1.0f);
+    e3->base_scale = 1.0f;
     e3->speed = 0.8f;
     
     // Camera init
@@ -149,13 +152,13 @@ void Application::Render()
 
     if (mode == 1) // SINGLE ENTITY
     {
-        if (single) single->Render(&framebuffer, &camera, Color::WHITE);
+        if (single) single->Render(&framebuffer, &camera, Color::RED);
     }
     else if (mode == 2) // MULTIPLE ANIMATED ENTITIES
     {
-        if (e1) e1->Render(&framebuffer, &camera, Color::WHITE);
-        if (e2) e2->Render(&framebuffer, &camera, Color::WHITE);
-        if (e3) e3->Render(&framebuffer, &camera, Color::WHITE);
+        if (e1) e1->Render(&framebuffer, &camera, Color::BLUE);
+        if (e2) e2->Render(&framebuffer, &camera, Color::GREEN);
+        if (e3) e3->Render(&framebuffer, &camera, Color::RED);
     }
 
     framebuffer.Render();
@@ -183,7 +186,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             exit(0);
             break;
 
-        // ===== LAB 2 MODES =====
+        // LAB 2 modes
         case SDLK_1:
             mode = 1; // SINGLE ENTITY
             break;
@@ -192,7 +195,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             mode = 2; // MULTIPLE ANIMATED ENTITIES
             break;
 
-        // ===== SELECT CAMERA PROPERTY =====
+        // select property of the camer
         case SDLK_n:
             cam_prop = PROP_NEAR;
             break;
@@ -205,11 +208,9 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             cam_prop = PROP_FOV;
             break;
 
-        // ===== INCREASE PROPERTY (+) =====
+        // increase
         case SDLK_PLUS:
         case SDLK_KP_PLUS:
-        case SDLK_EQUALS:      // teclado español
-        case SDLK_KP_EQUALS:
         {
             if (cam_prop == PROP_NEAR)
                 camera.near_plane += 0.1f;
@@ -218,7 +219,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             else if (cam_prop == PROP_FOV)
                 camera.fov += 5.0f * DEG2RAD;
 
-            // --- CLAMPS ---
+            // clamps
             if (camera.near_plane < 0.05f)
                 camera.near_plane = 0.05f;
 
@@ -230,13 +231,12 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             if (camera.fov < minFov) camera.fov = minFov;
             if (camera.fov > maxFov) camera.fov = maxFov;
 
-            camera.SetPerspective(camera.fov, camera.aspect,
-                                  camera.near_plane, camera.far_plane);
+            camera.SetPerspective(camera.fov, camera.aspect, camera.near_plane, camera.far_plane);
             camera.UpdateViewProjectionMatrix();
         }
         break;
 
-        // ===== DECREASE PROPERTY (-) =====
+        // decrease
         case SDLK_MINUS:
         case SDLK_KP_MINUS:
         {
@@ -259,8 +259,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             if (camera.fov < minFov) camera.fov = minFov;
             if (camera.fov > maxFov) camera.fov = maxFov;
 
-            camera.SetPerspective(camera.fov, camera.aspect,
-                                  camera.near_plane, camera.far_plane);
+            camera.SetPerspective(camera.fov, camera.aspect, camera.near_plane, camera.far_plane);
             camera.UpdateViewProjectionMatrix();
         }
         break;
@@ -314,7 +313,7 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event)
 
     if (panning)
     {
-        // Build camera right & up (based on current view)
+        // Build camera right & up (based on the current view)
         Vector3 forward = (camera.center - camera.eye);
         forward.Normalize();
 

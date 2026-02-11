@@ -44,8 +44,6 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c)
     auto clipToScreen = [framebuffer](const Vector3& p) -> Vector2 {
         float x = (p.x * 0.5f + 0.5f) * (float)(framebuffer->width  - 1);
         float y = (p.y * 0.5f + 0.5f) * (float)(framebuffer->height - 1);
-
-        // IMPORTANT: do NOT flip Y here (glDrawPixels style coordinates)
         return Vector2(x, y);
     };
 
