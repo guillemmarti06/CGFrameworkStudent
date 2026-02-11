@@ -25,59 +25,99 @@ Entity::~Entity()
 
 void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
 {
-    if (!framebuffer || !camera || !mesh)
+    if (!mesh || !camera || !framebuffer || !zBuffer)
         return;
 
-    // Mesh vertices are stored as triangles: every 3 vertices = 1 triangle
-    const std::vector<Vector3>& v = mesh->GetVertices();
-    if (v.empty())
+    // If there is no texture, we can still render using vertex colors (debug),
+    // but for Lab 3.4 we expect a texture
+    if (!texture)
         return;
 
-    // Helper: check if a projected vertex is inside the clip cube [-1,1]^3
-    auto isInsideClipCube = [](const Vector3& p) -> bool {
+    // Helper lambda: NDC [-1,1] -> Screen [0..W-1, 0..H-1]
+    auto clipToScreen = [framebuffer](const Vector3& p) -> Vector2
+    {
+        float x = (p.x * 0.5f + 0.5f) * (float)framebuffer->width;
+        float y = (p.y * 0.5f + 0.5f) * (float)framebuffer->height;
+
+        // NOTE: if your Y axis is flipped, swap this to:
+        // y = (1.0f - (p.y * 0.5f + 0.5f)) * framebuffer->height;
+
+        return Vector2(x, y);
+    };
+
+    // Helper: clip cube test in NDC
+    auto isInsideClipCube = [](const Vector3& p) -> bool
+    {
         return (p.x >= -1.0f && p.x <= 1.0f &&
                 p.y >= -1.0f && p.y <= 1.0f &&
                 p.z >= -1.0f && p.z <= 1.0f);
     };
 
-    // convert clip space [-1,1] to screen pixels [0..width-1, 0..height-1]
-    auto clipToScreen = [framebuffer](const Vector3& p) -> Vector2 {
-        float x = (p.x * 0.5f + 0.5f) * (float)(framebuffer->width  - 1);
-        float y = (p.y * 0.5f + 0.5f) * (float)(framebuffer->height - 1);
-        return Vector2(x, y);
-    };
+    // Mesh data
+    const std::vector<Vector3>& vertices = mesh->GetVertices();
+    const std::vector<Vector2>& uvs = mesh->GetUVs();
 
-    // Iterate triangles
-    for (size_t i = 0; i + 2 < v.size(); i += 3)
+    // Safety check (some OBJs may not have uvs)
+    if (uvs.size() != vertices.size())
+        return;
+
+    // Render triangle list (every 3 vertices = 1 triangle)
+    for (size_t i = 0; i + 2 < vertices.size(); i += 3)
     {
-        // 1) Local -> World using model matrix
-        Vector3 w0 = model * v[i + 0];
-        Vector3 w1 = model * v[i + 1];
-        Vector3 w2 = model * v[i + 2];
+        // 1) Local to World
+        Vector3 v0 = vertices[i];
+        Vector3 v1 = vertices[i + 1];
+        Vector3 v2 = vertices[i + 2];
 
-        // 2) World -> Clip (NDC) using camera viewprojection matrix
-        // (Camera::ProjectVector already divides by w for perspective)
+        Vector3 w0 = model * v0;
+        Vector3 w1 = model * v1;
+        Vector3 w2 = model * v2;
+
+        // 2) World to Clip/NDC
         Vector3 p0 = camera->ProjectVector(w0);
         Vector3 p1 = camera->ProjectVector(w1);
         Vector3 p2 = camera->ProjectVector(w2);
 
-        // 3) Reject triangles outside the clip cube [-1,1]^3 (simple approach, no clipping)
+        // 3) Reject triangles outside clip cube
         if (!isInsideClipCube(p0) || !isInsideClipCube(p1) || !isInsideClipCube(p2))
             continue;
 
-        // 4) Clip -> Screen
+        // 4) Clip -> Screen, keep z from NDC
         Vector2 s0 = clipToScreen(p0);
         Vector2 s1 = clipToScreen(p1);
         Vector2 s2 = clipToScreen(p2);
 
-        // Screen position (x,y) + keep z from clip space
         Vector3 s0_3(s0.x, s0.y, p0.z);
         Vector3 s1_3(s1.x, s1.y, p1.z);
         Vector3 s2_3(s2.x, s2.y, p2.z);
 
-        framebuffer->DrawTriangleInterpolated(s0_3, s1_3, s2_3, Color::RED, Color::GREEN, Color::BLUE, zBuffer);
+        // 5) Get UVs for each vertex (from mesh)
+        Vector2 uv0 = uvs[i];
+        Vector2 uv1 = uvs[i + 1];
+        Vector2 uv2 = uvs[i + 2];
+
+        // 6) Fill triangle info struct
+        sTriangleInfo tri;
+        tri.p0 = s0_3;
+        tri.p1 = s1_3;
+        tri.p2 = s2_3;
+
+        tri.uv0 = uv0;
+        tri.uv1 = uv1;
+        tri.uv2 = uv2;
+
+        // Debug colors
+        tri.c0 = Color::RED;
+        tri.c1 = Color::GREEN;
+        tri.c2 = Color::BLUE;
+
+        tri.texture = texture;
+
+        // 7) Raster triangle (texture + zbuffer inside)
+        framebuffer->DrawTriangleInterpolated(tri, zBuffer);
     }
 }
+
 
 void Entity::Update(float seconds_elapsed)
 {

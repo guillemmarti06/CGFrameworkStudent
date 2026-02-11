@@ -16,9 +16,22 @@
 #pragma warning(disable:4996)
 #endif
 
+//forward declaration for some functions in class Image
 class FloatImage;
 class Entity;
 class Camera;
+class Image;
+
+struct sTriangleInfo
+{
+    Vector3 p0, p1, p2;   // Screen coordinates (x,y) and depth (z)
+    Vector2 uv0, uv1, uv2; // Texture coordinates
+    Color c0, c1, c2;     // Not needed for texture, but useful for debugging
+    Image* texture;       // Texture image
+    
+    bool useTexture;      // T toggle
+    bool interpolateUV;   // C toggle
+};
 
 // A matrix of pixels
 class Image
@@ -95,9 +108,7 @@ public:
 	bool SaveTGA(const char* filename);
     
     //lab 3.2
-    void DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2,
-                                  const Color& c0, const Color& c1, const Color& c2,
-                                  FloatImage* zbuffer);
+    void DrawTriangleInterpolated(const sTriangleInfo& triangle, FloatImage* zbuffer);
 
 	// Used to easy code
 	#ifndef IGNORE_LAMBDAS
@@ -116,7 +127,6 @@ public:
 };
 
 // Image storing one float per pixel instead of a 3 or 4 component Color
-
 class FloatImage
 {
 public:

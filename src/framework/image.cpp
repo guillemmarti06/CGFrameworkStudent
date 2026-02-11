@@ -594,80 +594,80 @@ float EdgeFunction(const Vector3& a, const Vector3& b, const Vector3& c)
     return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
 }
 
-void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2,
-                                     const Color& c0, const Color& c1,const Color& c2,
-                                     FloatImage* zbuffer)
+void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer)
 {
-    // Compute triangle bounding box
-    int minX = (int)floor(std::min(p0.x, std::min(p1.x, p2.x)));
-    int maxX = (int)ceil (std::max(p0.x, std::max(p1.x, p2.x)));
-    int minY = (int)floor(std::min(p0.y, std::min(p1.y, p2.y)));
-    int maxY = (int)ceil (std::max(p0.y, std::max(p1.y, p2.y)));
+    // 1) Compute bounding box
+    int minX = (int)floor(std::min(t.p0.x, std::min(t.p1.x, t.p2.x)));
+    int maxX = (int)ceil (std::max(t.p0.x, std::max(t.p1.x, t.p2.x)));
+    int minY = (int)floor(std::min(t.p0.y, std::min(t.p1.y, t.p2.y)));
+    int maxY = (int)ceil (std::max(t.p0.y, std::max(t.p1.y, t.p2.y)));
 
-    // Clamp to image boundaries
+    // Clamp to image size
     if (minX < 0) minX = 0;
     if (minY < 0) minY = 0;
     if (maxX >= width)  maxX = width - 1;
     if (maxY >= height) maxY = height - 1;
 
-    // Compute total signed area of triangle
-    float area = (p1.x - p0.x)*(p2.y - p0.y) - (p1.y - p0.y)*(p2.x - p0.x);
-
+    // 2) Signed area of triangle (for barycentric)
+    float area = (t.p1.x - t.p0.x) * (t.p2.y - t.p0.y) - (t.p1.y - t.p0.y) * (t.p2.x - t.p0.x);
     if (fabs(area) < 1e-6f)
-        return; // Degenerate triangle
+        return;
 
-    // Loop through pixels inside bounding box
+    // 3) Loop pixels in bounding box
     for (int y = minY; y <= maxY; ++y)
     {
         for (int x = minX; x <= maxX; ++x)
         {
-            // Pixel center
             float px = x + 0.5f;
             float py = y + 0.5f;
 
-            // Compute barycentric coordinates
-            float w0 = ( (p1.x - px)*(p2.y - py) - (p1.y - py)*(p2.x - px) );
-            float w1 = ( (p2.x - px)*(p0.y - py) - (p2.y - py)*(p0.x - px) );
-            float w2 = ( (p0.x - px)*(p1.y - py) - (p0.y - py)*(p1.x - px) );
+            // Compute barycentric (unnormalized)
+            float w0 = ((t.p1.x - px) * (t.p2.y - py) - (t.p1.y - py) * (t.p2.x - px));
+            float w1 = ((t.p2.x - px) * (t.p0.y - py) - (t.p2.y - py) * (t.p0.x - px));
+            float w2 = ((t.p0.x - px) * (t.p1.y - py) - (t.p0.y - py) * (t.p1.x - px));
 
-            // Check if inside triangle
-            if ((w0 >= 0 && w1 >= 0 && w2 >= 0 && area > 0) ||
-                (w0 <= 0 && w1 <= 0 && w2 <= 0 && area < 0))
-            {
-                // Normalize barycentric coordinates
-                float alpha = w0 / area;
-                float beta  = w1 / area;
-                float gamma = w2 / area;
+            // Inside test (same sign as area)
+            bool inside = false;
+            if (area > 0.0f)
+                inside = (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f);
+            else
+                inside = (w0 <= 0.0f && w1 <= 0.0f && w2 <= 0.0f);
 
-                // Interpolate depth
-                float z = alpha * p0.z + beta * p1.z + gamma * p2.z;
+            if (!inside)
+                continue;
 
-                float currentZ = zbuffer->GetPixel(x, y);
+            // Normalize barycentric
+            float alpha = w0 / area;
+            float beta  = w1 / area;
+            float gamma = w2 / area;
 
-                // Depth test (keep closest pixel)
-                if (z < currentZ)
-                {
-                    zbuffer->SetPixel(x, y, z);
+            // 4) Depth interpolation + z test
+            float z = alpha * t.p0.z + beta * t.p1.z + gamma * t.p2.z;
+            float currentZ = zbuffer->GetPixel(x, y);
 
-                    // Interpolate color
-                    float r = alpha * c0.r + beta * c1.r + gamma * c2.r;
-                    float g = alpha * c0.g + beta * c1.g + gamma * c2.g;
-                    float b = alpha * c0.b + beta * c1.b + gamma * c2.b;
+            if (z >= currentZ)
+                continue;
 
-                    // Clamp to [0..255]
-                    if (r < 0) r = 0; if (r > 255) r = 255;
-                    if (g < 0) g = 0; if (g > 255) g = 255;
-                    if (b < 0) b = 0; if (b > 255) b = 255;
+            zbuffer->SetPixel(x, y, z);
 
-                    Color finalColor;
-                    finalColor.r = (unsigned char)r;
-                    finalColor.g = (unsigned char)g;
-                    finalColor.b = (unsigned char)b;
+            // 5) Interpolate UVs (IMPORTANT: interpolate UVs, not colors)
+            Vector2 uv = t.uv0 * alpha + t.uv1 * beta + t.uv2 * gamma;
 
-                    SetPixel(x, y, finalColor);
-                }
-            }
+            // Optional clamp to avoid sampling outside
+            if (uv.x < 0) uv.x = 0; if (uv.x > 1) uv.x = 1;
+            if (uv.y < 0) uv.y = 0; if (uv.y > 1) uv.y = 1;
+
+            // 6) Convert UV [0..1] to texture coordinates [0..W-1, 0..H-1]
+            int tx = (int)(uv.x * (t.texture->width  - 1));
+            int ty = (int)(uv.y * (t.texture->height - 1));
+
+            // If your textures look upside down, either:
+            // - load with LoadTGA(path, true) OR
+            // - use ty = (1.0f - uv.y) * (H-1)
+            // Here we assume you will load with flip = true if needed.
+
+            Color texColor = t.texture->GetPixel(tx, ty);
+            SetPixel(x, y, texColor);
         }
     }
 }
-

@@ -18,6 +18,7 @@ class Entity
 public:
     Mesh* mesh;      // Geometry to render (loaded from OBJ, etc.)
     Matrix44 model;  // Model matrix (scale/rotate/translate)
+    Image* texture = NULL;
     
     // Variables to make each entity different (simple scene)
     Vector3 base_position;

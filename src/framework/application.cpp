@@ -29,7 +29,7 @@ void Application::Init(void)
 {
     std::cout << "Initiating app..." << std::endl;
     
-    // ALL THESE IMAGES AND ANIMATIO IS FROM LAB1!! BUT WE KEPT IT (JUST INITIALIZED, it does not disturb)
+    // ALL THESE IMAGES AND ANIMATION IS FROM LAB1!! BUT WE KEPT IT (JUST INITIALIZED, it does not disturb)
 
     // We use a persistent canvas image so the paint stays on screen between frames
     canvas.Resize(framebuffer.width, framebuffer.height);
@@ -97,32 +97,57 @@ void Application::Init(void)
     particleSystem.Init(framebuffer.width, framebuffer.height);
     
     single = new Entity();
-    Mesh* mesh = new Mesh();
-    mesh->LoadOBJ("meshes/lee.obj");
-    single->mesh = mesh;
     // we adjusted to 0.8 so that when you zoom you still see the shape correctly
     single->model.MakeTranslationMatrix(0.0f, 0.8f, 0.0f);
     
-    lee_mesh = new Mesh();
+    // use lee text/mesh for single
+    Mesh* lee_mesh = new Mesh();
     lee_mesh->LoadOBJ("meshes/lee.obj");
+    single->mesh = lee_mesh;
+    Image* tex_lee = new Image();
+    tex_lee->LoadTGA("textures/lee_color_specular.tga", true);
+    single->texture = tex_lee;
 
+    //MULTIPLE ENTITIES
+    
+    //Create first entity, on the left
     e1 = new Entity();
-    e1->mesh = lee_mesh;
     e1->base_position = Vector3(-1.5f, 0.8f, 0.0f);
     e1->base_scale = 1.3f;
-    e1->speed = 1.0f;
-
+    e1->speed = 1.3f;
+    
+    // use lee text/mesh for e1 aswell
+    e1->mesh = lee_mesh;
+    e1->texture = tex_lee;
+    
+    // Create second entity, same as first bit on the right
     e2 = new Entity();
-    e2->mesh = lee_mesh;
     e2->base_position = Vector3(1.5f, 0.8f, 0.0f);
     e2->base_scale = 1.3f;
     e2->speed = 1.3f;
+    
+    // use anna mesh and text for second entity
+    Mesh* mesh_anna = new Mesh();
+    mesh_anna->LoadOBJ("meshes/anna.obj");
+    e2->mesh = mesh_anna;
+    Image* tex_anna = new Image();
+    tex_anna->LoadTGA("textures/anna_color_specular.tga", true);
+    e2->texture = tex_anna;
 
+    
+    // Create third entity, a bit smaller, centered, and rotating slower than the other 2
     e3 = new Entity();
-    e3->mesh = lee_mesh;
     e3->base_position = Vector3(0.0f, 0.5f, -1.0f);
     e3->base_scale = 1.0f;
     e3->speed = 0.8f;
+    
+    //use cleo mesh/text for third entity
+    Mesh* mesh_cleo = new Mesh();
+    mesh_cleo->LoadOBJ("meshes/cleo.obj");
+    e3->mesh = mesh_cleo;
+    Image* tex_cleo = new Image();
+    tex_cleo->LoadTGA("textures/cleo_color_specular.tga", true);
+    e3->texture = tex_cleo;
     
     // Camera init
     camera.type = Camera::PERSPECTIVE;
@@ -137,7 +162,7 @@ void Application::Init(void)
     // orbit params (you must have added these in camera.h)
     camera.yaw = 0.0f;
     camera.pitch = 0.0f;
-    camera.distance = 5.0f;
+    camera.distance = 2.5f;
 
     // compute eye
     camera.eye.x = camera.center.x + cosf(camera.pitch) * sinf(camera.yaw) * camera.distance;
@@ -155,6 +180,7 @@ void Application::Render()
     framebuffer.Fill(Color::BLACK);
     // Clear zbuffer with a very large value
     zbuffer->Fill(1e9f);
+    FloatImage* zb = useZBuffer ? zbuffer : NULL;
 
     if (mode == 1) // SINGLE ENTITY
     {
@@ -166,7 +192,6 @@ void Application::Render()
         if (e2) e2->Render(&framebuffer, &camera, zbuffer);
         if (e3) e3->Render(&framebuffer, &camera, zbuffer);
     }
-
     framebuffer.Render();
 }
 
@@ -212,6 +237,19 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
 
         case SDLK_v:
             cam_prop = PROP_FOV;
+            break;
+            
+        // LAB 3 interactivity
+        case SDLK_t:
+            useTexture = !useTexture;
+            break;
+        
+        case SDLK_z:
+            useZBuffer = !useZBuffer;
+            break;
+        
+        case SDLK_c:
+            interpolateUV = !interpolateUV;
             break;
 
         // increase

@@ -122,4 +122,9 @@ public:
     CameraProp cam_prop = PROP_NEAR;
     
     FloatImage* zbuffer = NULL;
+    
+    // Lab3 interactivity
+    bool useTexture = true;      // T
+    bool useZBuffer = true;      // Z
+    bool interpolateUV = true;   // C
 };
