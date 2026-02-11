@@ -70,10 +70,12 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c)
         Vector2 s1 = clipToScreen(p1);
         Vector2 s2 = clipToScreen(p2);
 
-        // 5) Draw wireframe triangle with DDA lines (from Lab 1)
-        framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, c);
-        framebuffer->DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, c);
-        framebuffer->DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, c);
+        // Screen position (x,y) + keep z from clip space
+        Vector3 s0_3(s0.x, s0.y, p0.z);
+        Vector3 s1_3(s1.x, s1.y, p1.z);
+        Vector3 s2_3(s2.x, s2.y, p2.z);
+
+        framebuffer->DrawTriangleInterpolated(s0_3, s1_3, s2_3, Color::RED, Color::GREEN, Color::BLUE);
     }
 }
 

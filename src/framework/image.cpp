@@ -587,3 +587,71 @@ void Image::DrawImage(const Image& img, int x, int y)
         }
     }
 }
+
+// Computes signed area of the parallelogram formed by AB and AC
+float EdgeFunction(const Vector3& a, const Vector3& b, const Vector3& c)
+{
+    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
+}
+
+void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2,
+                                     const Color& c0, const Color& c1, const Color& c2)
+{
+    // 1) Compute bounding box of the triangle
+    int minX = (int)floor(std::min(p0.x, std::min(p1.x, p2.x)));
+    int maxX = (int)ceil (std::max(p0.x, std::max(p1.x, p2.x)));
+    int minY = (int)floor(std::min(p0.y, std::min(p1.y, p2.y)));
+    int maxY = (int)ceil (std::max(p0.y, std::max(p1.y, p2.y)));
+
+    // Clamp bounding box to image size
+    if (minX < 0) minX = 0;
+    if (minY < 0) minY = 0;
+    if (maxX >= width)  maxX = width - 1;
+    if (maxY >= height) maxY = height - 1;
+
+    // 2) Compute total signed area of the triangle
+    float area = EdgeFunction(p0, p1, p2);
+
+    // If area is 0, triangle is degenerate → do nothing
+    if (fabs(area) < 1e-6f)
+        return;
+
+    // 3) Loop through every pixel inside bounding box
+    for (int y = minY; y <= maxY; ++y)
+    {
+        for (int x = minX; x <= maxX; ++x)
+        {
+            // Pixel center
+            Vector3 p((float)x + 0.5f, (float)y + 0.5f, 0.0f);
+
+            // Compute barycentric coordinates (unnormalized)
+            float w0 = EdgeFunction(p1, p2, p);
+            float w1 = EdgeFunction(p2, p0, p);
+            float w2 = EdgeFunction(p0, p1, p);
+
+            // Check if point is inside triangle
+            // All weights must have same sign as total area
+            if ((w0 >= 0 && w1 >= 0 && w2 >= 0 && area > 0) ||
+                (w0 <= 0 && w1 <= 0 && w2 <= 0 && area < 0))
+            {
+                // Normalize barycentric weights
+                float alpha = w0 / area;
+                float beta  = w1 / area;
+                float gamma = w2 / area;
+
+                // Interpolate color
+                float r = alpha * c0.r + beta * c1.r + gamma * c2.r;
+                float g = alpha * c0.g + beta * c1.g + gamma * c2.g;
+                float b = alpha * c0.b + beta * c1.b + gamma * c2.b;
+
+                Color finalColor;
+                finalColor.r = (unsigned char)r;
+                finalColor.g = (unsigned char)g;
+                finalColor.b = (unsigned char)b;
+
+                SetPixel(x, y, finalColor);
+            }
+        }
+    }
+}
+

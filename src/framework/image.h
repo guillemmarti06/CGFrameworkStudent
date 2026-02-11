@@ -93,6 +93,12 @@ public:
 	bool LoadPNG(const char* filename, bool flip_y = true);
 	bool LoadTGA(const char* filename, bool flip_y = false);
 	bool SaveTGA(const char* filename);
+    
+    //lab 3.2
+    void DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2,
+                                  const Color& c0, const Color& c1, const Color& c2);
+
+
 
 	// Used to easy code
 	#ifndef IGNORE_LAMBDAS
