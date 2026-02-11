@@ -73,7 +73,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         Vector2 s1 = clipToScreen(p1);
         Vector2 s2 = clipToScreen(p2);
 
-        // WIREFRAME mode (Lab2 style)
+        // Wireframe mode
         if (mode == eRenderMode::WIREFRAME)
         {
             framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, Color::WHITE);
@@ -91,7 +91,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         sTriangleInfo tri;
         tri.p0 = sp0; tri.p1 = sp1; tri.p2 = sp2;
 
-        // Default UVs (safe)
+        // Default UVs
         tri.uv0 = Vector2(0,0);
         tri.uv1 = Vector2(0,0);
         tri.uv2 = Vector2(0,0);
@@ -142,7 +142,7 @@ void Entity::Update(float seconds_elapsed)
 
     float t = global_time * speed;
 
-    // Build model matrix using TRS
+    // Build model matrix using TRS (as said on the slides)
     Matrix44 T, R, S;
 
     float y = sinf(t) * 0.2f;                 // translate up/down

@@ -159,7 +159,7 @@ void Application::Init(void)
     camera.center = Vector3(0, 1, 0);
     camera.up = Vector3(0, 1, 0);
 
-    // orbit params (you must have added these in camera.h)
+    // orbit params
     camera.yaw = 0.0f;
     camera.pitch = 0.0f;
     camera.distance = 2.5f;

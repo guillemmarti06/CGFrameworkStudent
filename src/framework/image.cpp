@@ -576,17 +576,23 @@ void Image::DrawTriangle(const Vector2& p0, const Vector2& p1, const Vector2& p2
     DrawLineDDA(x2, y2, x0, y0, borderColor);
 }
 
-// PAINT TOOL:
+// PAINT TOOL (LAB 1)
 
-void Image::DrawImage(const Image& img, int x, int y)
-{
+void Image::DrawImage(const Image& img, int x, int y){
     for (int j = 0; j < img.height; ++j){
         for (int i = 0; i < img.width; ++i){
+            int px = x + i;
+            int py = y + j;
+
+            if (px < 0 || py < 0 || px >= (int)width || py >= (int)height)
+                continue;
+
             Color c = img.GetPixel(i, j);
-            SetPixel(x + i, y + j, c);
+            SetPixel(px, py, c);
         }
     }
 }
+
 
 // Computes signed area of the parallelogram formed by AB and AC
 float EdgeFunction(const Vector3& a, const Vector3& b, const Vector3& c)

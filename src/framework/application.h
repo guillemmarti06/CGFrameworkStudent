@@ -104,6 +104,7 @@ public:
 		return Vector2(float(w), float(h));
 	}
     
+    // declare the entities used
     Entity* single = nullptr;
     Entity* e1 = nullptr;
     Entity* e2 = nullptr;
@@ -111,7 +112,7 @@ public:
     Mesh* lee_mesh = nullptr;
     
     Camera camera;
-    int mode = 1; // start with single (mode 1)
+    int mode = 1; // start with single entity (mode 1)
 
     bool orbiting = false; // LMB
     bool panning  = false; // RMB
@@ -123,7 +124,7 @@ public:
     
     FloatImage* zbuffer = NULL;
     
-    // Lab3 interactivity
+    // used for Lab3 interactivity
     bool useTexture = true;      // T
     bool useZBuffer = true;      // Z
     bool interpolateUV = true;   // C
