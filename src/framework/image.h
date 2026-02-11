@@ -96,9 +96,8 @@ public:
     
     //lab 3.2
     void DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2,
-                                  const Color& c0, const Color& c1, const Color& c2);
-
-
+                                  const Color& c0, const Color& c1, const Color& c2,
+                                  FloatImage* zbuffer);
 
 	// Used to easy code
 	#ifndef IGNORE_LAMBDAS

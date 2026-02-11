@@ -34,6 +34,10 @@ void Application::Init(void)
     // We use a persistent canvas image so the paint stays on screen between frames
     canvas.Resize(framebuffer.width, framebuffer.height);
     canvas.Fill(Color::BLACK);
+    
+    zbuffer = new FloatImage();
+    zbuffer->Resize(window_width, window_height);
+
 
     // Load UI icons (stored inside /res/images)
     // here we pass "images/..." (NOT "res/images/...") because utils already adds /res.
@@ -149,16 +153,18 @@ void Application::Init(void)
 void Application::Render()
 {
     framebuffer.Fill(Color::BLACK);
+    // Clear zbuffer with a very large value
+    zbuffer->Fill(1e9f);
 
     if (mode == 1) // SINGLE ENTITY
     {
-        if (single) single->Render(&framebuffer, &camera, Color::RED);
+        if (single) single->Render(&framebuffer, &camera, zbuffer);
     }
     else if (mode == 2) // MULTIPLE ANIMATED ENTITIES
     {
-        if (e1) e1->Render(&framebuffer, &camera, Color::BLUE);
-        if (e2) e2->Render(&framebuffer, &camera, Color::GREEN);
-        if (e3) e3->Render(&framebuffer, &camera, Color::RED);
+        if (e1) e1->Render(&framebuffer, &camera, zbuffer);
+        if (e2) e2->Render(&framebuffer, &camera, zbuffer);
+        if (e3) e3->Render(&framebuffer, &camera, zbuffer);
     }
 
     framebuffer.Render();

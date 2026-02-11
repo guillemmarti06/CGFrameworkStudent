@@ -595,61 +595,77 @@ float EdgeFunction(const Vector3& a, const Vector3& b, const Vector3& c)
 }
 
 void Image::DrawTriangleInterpolated(const Vector3& p0, const Vector3& p1, const Vector3& p2,
-                                     const Color& c0, const Color& c1, const Color& c2)
+                                     const Color& c0, const Color& c1,const Color& c2,
+                                     FloatImage* zbuffer)
 {
-    // 1) Compute bounding box of the triangle
+    // Compute triangle bounding box
     int minX = (int)floor(std::min(p0.x, std::min(p1.x, p2.x)));
     int maxX = (int)ceil (std::max(p0.x, std::max(p1.x, p2.x)));
     int minY = (int)floor(std::min(p0.y, std::min(p1.y, p2.y)));
     int maxY = (int)ceil (std::max(p0.y, std::max(p1.y, p2.y)));
 
-    // Clamp bounding box to image size
+    // Clamp to image boundaries
     if (minX < 0) minX = 0;
     if (minY < 0) minY = 0;
     if (maxX >= width)  maxX = width - 1;
     if (maxY >= height) maxY = height - 1;
 
-    // 2) Compute total signed area of the triangle
-    float area = EdgeFunction(p0, p1, p2);
+    // Compute total signed area of triangle
+    float area = (p1.x - p0.x)*(p2.y - p0.y) - (p1.y - p0.y)*(p2.x - p0.x);
 
-    // If area is 0, triangle is degenerate → do nothing
     if (fabs(area) < 1e-6f)
-        return;
+        return; // Degenerate triangle
 
-    // 3) Loop through every pixel inside bounding box
+    // Loop through pixels inside bounding box
     for (int y = minY; y <= maxY; ++y)
     {
         for (int x = minX; x <= maxX; ++x)
         {
             // Pixel center
-            Vector3 p((float)x + 0.5f, (float)y + 0.5f, 0.0f);
+            float px = x + 0.5f;
+            float py = y + 0.5f;
 
-            // Compute barycentric coordinates (unnormalized)
-            float w0 = EdgeFunction(p1, p2, p);
-            float w1 = EdgeFunction(p2, p0, p);
-            float w2 = EdgeFunction(p0, p1, p);
+            // Compute barycentric coordinates
+            float w0 = ( (p1.x - px)*(p2.y - py) - (p1.y - py)*(p2.x - px) );
+            float w1 = ( (p2.x - px)*(p0.y - py) - (p2.y - py)*(p0.x - px) );
+            float w2 = ( (p0.x - px)*(p1.y - py) - (p0.y - py)*(p1.x - px) );
 
-            // Check if point is inside triangle
-            // All weights must have same sign as total area
+            // Check if inside triangle
             if ((w0 >= 0 && w1 >= 0 && w2 >= 0 && area > 0) ||
                 (w0 <= 0 && w1 <= 0 && w2 <= 0 && area < 0))
             {
-                // Normalize barycentric weights
+                // Normalize barycentric coordinates
                 float alpha = w0 / area;
                 float beta  = w1 / area;
                 float gamma = w2 / area;
 
-                // Interpolate color
-                float r = alpha * c0.r + beta * c1.r + gamma * c2.r;
-                float g = alpha * c0.g + beta * c1.g + gamma * c2.g;
-                float b = alpha * c0.b + beta * c1.b + gamma * c2.b;
+                // Interpolate depth
+                float z = alpha * p0.z + beta * p1.z + gamma * p2.z;
 
-                Color finalColor;
-                finalColor.r = (unsigned char)r;
-                finalColor.g = (unsigned char)g;
-                finalColor.b = (unsigned char)b;
+                float currentZ = zbuffer->GetPixel(x, y);
 
-                SetPixel(x, y, finalColor);
+                // Depth test (keep closest pixel)
+                if (z < currentZ)
+                {
+                    zbuffer->SetPixel(x, y, z);
+
+                    // Interpolate color
+                    float r = alpha * c0.r + beta * c1.r + gamma * c2.r;
+                    float g = alpha * c0.g + beta * c1.g + gamma * c2.g;
+                    float b = alpha * c0.b + beta * c1.b + gamma * c2.b;
+
+                    // Clamp to [0..255]
+                    if (r < 0) r = 0; if (r > 255) r = 255;
+                    if (g < 0) g = 0; if (g > 255) g = 255;
+                    if (b < 0) b = 0; if (b > 255) b = 255;
+
+                    Color finalColor;
+                    finalColor.r = (unsigned char)r;
+                    finalColor.g = (unsigned char)g;
+                    finalColor.b = (unsigned char)b;
+
+                    SetPixel(x, y, finalColor);
+                }
             }
         }
     }

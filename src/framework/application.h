@@ -121,4 +121,5 @@ public:
     enum CameraProp { PROP_NEAR, PROP_FAR, PROP_FOV };
     CameraProp cam_prop = PROP_NEAR;
     
+    FloatImage* zbuffer = NULL;
 };

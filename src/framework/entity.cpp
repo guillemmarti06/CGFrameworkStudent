@@ -23,7 +23,7 @@ Entity::~Entity()
 {
 }
 
-void Entity::Render(Image* framebuffer, Camera* camera, const Color& c)
+void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
 {
     if (!framebuffer || !camera || !mesh)
         return;
@@ -75,7 +75,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, const Color& c)
         Vector3 s1_3(s1.x, s1.y, p1.z);
         Vector3 s2_3(s2.x, s2.y, p2.z);
 
-        framebuffer->DrawTriangleInterpolated(s0_3, s1_3, s2_3, Color::RED, Color::GREEN, Color::BLUE);
+        framebuffer->DrawTriangleInterpolated(s0_3, s1_3, s2_3, Color::RED, Color::GREEN, Color::BLUE, zBuffer);
     }
 }
 

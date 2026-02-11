@@ -27,6 +27,6 @@ public:
     Entity();
     ~Entity();
     
-    void Render(Image* framebuffer, Camera* camera, const Color& c);
+    void Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer);
     void Update(float seconds_elapsed);
 };
