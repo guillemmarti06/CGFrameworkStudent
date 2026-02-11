@@ -127,4 +127,7 @@ public:
     bool useTexture = true;      // T
     bool useZBuffer = true;      // Z
     bool interpolateUV = true;   // C
+    bool wireframe = false; // W
+    
+    void ApplyInteractivityToEntity(Entity* e);
 };

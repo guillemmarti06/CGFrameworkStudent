@@ -596,24 +596,25 @@ float EdgeFunction(const Vector3& a, const Vector3& b, const Vector3& c)
 
 void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer)
 {
-    // 1) Compute bounding box
+    // 1) Bounding box
     int minX = (int)floor(std::min(t.p0.x, std::min(t.p1.x, t.p2.x)));
     int maxX = (int)ceil (std::max(t.p0.x, std::max(t.p1.x, t.p2.x)));
     int minY = (int)floor(std::min(t.p0.y, std::min(t.p1.y, t.p2.y)));
     int maxY = (int)ceil (std::max(t.p0.y, std::max(t.p1.y, t.p2.y)));
 
-    // Clamp to image size
     if (minX < 0) minX = 0;
     if (minY < 0) minY = 0;
-    if (maxX >= width)  maxX = width - 1;
-    if (maxY >= height) maxY = height - 1;
+    if (maxX >= (int)width)  maxX = (int)width - 1;
+    if (maxY >= (int)height) maxY = (int)height - 1;
 
-    // 2) Signed area of triangle (for barycentric)
+    // 2) Signed area
     float area = (t.p1.x - t.p0.x) * (t.p2.y - t.p0.y) - (t.p1.y - t.p0.y) * (t.p2.x - t.p0.x);
     if (fabs(area) < 1e-6f)
         return;
 
-    // 3) Loop pixels in bounding box
+    bool doZ = (zbuffer != NULL);
+
+    // 3) Raster
     for (int y = minY; y <= maxY; ++y)
     {
         for (int x = minX; x <= maxX; ++x)
@@ -621,12 +622,10 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer
             float px = x + 0.5f;
             float py = y + 0.5f;
 
-            // Compute barycentric (unnormalized)
             float w0 = ((t.p1.x - px) * (t.p2.y - py) - (t.p1.y - py) * (t.p2.x - px));
             float w1 = ((t.p2.x - px) * (t.p0.y - py) - (t.p2.y - py) * (t.p0.x - px));
             float w2 = ((t.p0.x - px) * (t.p1.y - py) - (t.p0.y - py) * (t.p1.x - px));
 
-            // Inside test (same sign as area)
             bool inside = false;
             if (area > 0.0f)
                 inside = (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f);
@@ -636,38 +635,41 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer
             if (!inside)
                 continue;
 
-            // Normalize barycentric
             float alpha = w0 / area;
             float beta  = w1 / area;
             float gamma = w2 / area;
 
-            // 4) Depth interpolation + z test
-            float z = alpha * t.p0.z + beta * t.p1.z + gamma * t.p2.z;
-            float currentZ = zbuffer->GetPixel(x, y);
+            // Depth test (optional)
+            if (doZ)
+            {
+                float z = alpha * t.p0.z + beta * t.p1.z + gamma * t.p2.z;
+                float currentZ = zbuffer->GetPixel(x, y);
+                if (z >= currentZ)
+                    continue;
+                zbuffer->SetPixel(x, y, z);
+            }
 
-            if (z >= currentZ)
-                continue;
+            // Choose shading mode:
+            // If useTexture and texture exists -> sample texture using interpolated UV
+            // Else -> interpolate colors (or plain color if all c0=c1=c2)
+            if (t.useTexture && t.texture != NULL)
+            {
+                Vector2 uv = t.uv0 * alpha + t.uv1 * beta + t.uv2 * gamma;
 
-            zbuffer->SetPixel(x, y, z);
+                if (uv.x < 0) uv.x = 0; if (uv.x > 1) uv.x = 1;
+                if (uv.y < 0) uv.y = 0; if (uv.y > 1) uv.y = 1;
 
-            // 5) Interpolate UVs (IMPORTANT: interpolate UVs, not colors)
-            Vector2 uv = t.uv0 * alpha + t.uv1 * beta + t.uv2 * gamma;
+                int tx = (int)(uv.x * (t.texture->width  - 1));
+                int ty = (int)(uv.y * (t.texture->height - 1));
 
-            // Optional clamp to avoid sampling outside
-            if (uv.x < 0) uv.x = 0; if (uv.x > 1) uv.x = 1;
-            if (uv.y < 0) uv.y = 0; if (uv.y > 1) uv.y = 1;
-
-            // 6) Convert UV [0..1] to texture coordinates [0..W-1, 0..H-1]
-            int tx = (int)(uv.x * (t.texture->width  - 1));
-            int ty = (int)(uv.y * (t.texture->height - 1));
-
-            // If your textures look upside down, either:
-            // - load with LoadTGA(path, true) OR
-            // - use ty = (1.0f - uv.y) * (H-1)
-            // Here we assume you will load with flip = true if needed.
-
-            Color texColor = t.texture->GetPixel(tx, ty);
-            SetPixel(x, y, texColor);
+                Color texColor = t.texture->GetPixel(tx, ty);
+                SetPixel(x, y, texColor);
+            }
+            else
+            {
+                Color c = t.c0 * alpha + t.c1 * beta + t.c2 * gamma;
+                SetPixel(x, y, c);
+            }
         }
     }
 }

@@ -25,27 +25,19 @@ Entity::~Entity()
 
 void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
 {
-    if (!mesh || !camera || !framebuffer || !zBuffer)
+    if (!mesh || !camera || !framebuffer)
         return;
 
-    // If there is no texture, we can still render using vertex colors (debug),
-    // but for Lab 3.4 we expect a texture
-    if (!texture)
-        return;
+    // If Z is disabled, we just ignore the zbuffer pointer
+    FloatImage* zb = useZBuffer ? zBuffer : NULL;
 
-    // Helper lambda: NDC [-1,1] -> Screen [0..W-1, 0..H-1]
     auto clipToScreen = [framebuffer](const Vector3& p) -> Vector2
     {
         float x = (p.x * 0.5f + 0.5f) * (float)framebuffer->width;
         float y = (p.y * 0.5f + 0.5f) * (float)framebuffer->height;
-
-        // NOTE: if your Y axis is flipped, swap this to:
-        // y = (1.0f - (p.y * 0.5f + 0.5f)) * framebuffer->height;
-
         return Vector2(x, y);
     };
 
-    // Helper: clip cube test in NDC
     auto isInsideClipCube = [](const Vector3& p) -> bool
     {
         return (p.x >= -1.0f && p.x <= 1.0f &&
@@ -53,18 +45,15 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
                 p.z >= -1.0f && p.z <= 1.0f);
     };
 
-    // Mesh data
     const std::vector<Vector3>& vertices = mesh->GetVertices();
     const std::vector<Vector2>& uvs = mesh->GetUVs();
 
-    // Safety check (some OBJs may not have uvs)
-    if (uvs.size() != vertices.size())
-        return;
+    // We can still render without UVs if we are not using texture,
+    // but if we want texture we need uvs.
+    bool meshHasUVs = (uvs.size() == vertices.size());
 
-    // Render triangle list (every 3 vertices = 1 triangle)
     for (size_t i = 0; i + 2 < vertices.size(); i += 3)
     {
-        // 1) Local to World
         Vector3 v0 = vertices[i];
         Vector3 v1 = vertices[i + 1];
         Vector3 v2 = vertices[i + 2];
@@ -73,48 +62,74 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         Vector3 w1 = model * v1;
         Vector3 w2 = model * v2;
 
-        // 2) World to Clip/NDC
         Vector3 p0 = camera->ProjectVector(w0);
         Vector3 p1 = camera->ProjectVector(w1);
         Vector3 p2 = camera->ProjectVector(w2);
 
-        // 3) Reject triangles outside clip cube
         if (!isInsideClipCube(p0) || !isInsideClipCube(p1) || !isInsideClipCube(p2))
             continue;
 
-        // 4) Clip -> Screen, keep z from NDC
         Vector2 s0 = clipToScreen(p0);
         Vector2 s1 = clipToScreen(p1);
         Vector2 s2 = clipToScreen(p2);
 
-        Vector3 s0_3(s0.x, s0.y, p0.z);
-        Vector3 s1_3(s1.x, s1.y, p1.z);
-        Vector3 s2_3(s2.x, s2.y, p2.z);
+        // WIREFRAME mode (Lab2 style)
+        if (mode == eRenderMode::WIREFRAME)
+        {
+            framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, Color::WHITE);
+            framebuffer->DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, Color::WHITE);
+            framebuffer->DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, Color::WHITE);
+            continue;
+        }
 
-        // 5) Get UVs for each vertex (from mesh)
-        Vector2 uv0 = uvs[i];
-        Vector2 uv1 = uvs[i + 1];
-        Vector2 uv2 = uvs[i + 2];
+        // Filled modes need (x,y,z)
+        Vector3 sp0(s0.x, s0.y, p0.z);
+        Vector3 sp1(s1.x, s1.y, p1.z);
+        Vector3 sp2(s2.x, s2.y, p2.z);
 
-        // 6) Fill triangle info struct
+        // Build triangle info
         sTriangleInfo tri;
-        tri.p0 = s0_3;
-        tri.p1 = s1_3;
-        tri.p2 = s2_3;
+        tri.p0 = sp0; tri.p1 = sp1; tri.p2 = sp2;
 
-        tri.uv0 = uv0;
-        tri.uv1 = uv1;
-        tri.uv2 = uv2;
+        // Default UVs (safe)
+        tri.uv0 = Vector2(0,0);
+        tri.uv1 = Vector2(0,0);
+        tri.uv2 = Vector2(0,0);
 
-        // Debug colors
+        if (meshHasUVs)
+        {
+            tri.uv0 = uvs[i];
+            tri.uv1 = uvs[i + 1];
+            tri.uv2 = uvs[i + 2];
+        }
+
+        // Set debug vertex colors
         tri.c0 = Color::RED;
         tri.c1 = Color::GREEN;
         tri.c2 = Color::BLUE;
 
         tri.texture = texture;
 
-        // 7) Raster triangle (texture + zbuffer inside)
-        framebuffer->DrawTriangleInterpolated(tri, zBuffer);
+        // Triangles: plain color
+        // Triangles Interpolated: texture (UV interp) OR vertex color per vertex (barycentric)
+        if (mode == eRenderMode::TRIANGLES)
+        {
+            // plain color (all same -> solid)
+            Color plain(180, 180, 180);
+            tri.c0 = plain;
+            tri.c1 = plain;
+            tri.c2 = plain;
+
+            tri.useTexture = false;
+        }
+        else // Triangles_interpolated
+        {
+            // If T says texture, try texture. If no texture or no uvs -> fallback to vertex colors
+            bool canUseTexture = (useTexture && tri.texture != NULL && meshHasUVs);
+            tri.useTexture = canUseTexture ? true : false;
+        }
+
+        framebuffer->DrawTriangleInterpolated(tri, zb);
     }
 }
 

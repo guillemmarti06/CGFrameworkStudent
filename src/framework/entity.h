@@ -24,6 +24,14 @@ public:
     Vector3 base_position;
     float base_scale;
     float speed;
+    
+    enum class eRenderMode { POINTCLOUD, WIREFRAME, TRIANGLES, TRIANGLES_INTERPOLATED };
+    eRenderMode mode = eRenderMode::TRIANGLES_INTERPOLATED;
+
+    // Lab3 toggles
+    bool useTexture = true;     // T
+    bool useZBuffer = true;     // Z
+    bool interpolateUV = true;  // C
 
     Entity();
     ~Entity();

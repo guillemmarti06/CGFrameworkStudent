@@ -28,6 +28,7 @@ struct sTriangleInfo
     Vector2 uv0, uv1, uv2; // Texture coordinates
     Color c0, c1, c2;     // Not needed for texture, but useful for debugging
     Image* texture;       // Texture image
+    bool useTexture = true; // If false -> use interpolated vertex colors instead
 };
 
 // A matrix of pixels

@@ -128,7 +128,7 @@ void Application::Init(void)
     
     // use anna mesh and text for second entity
     Mesh* mesh_anna = new Mesh();
-    mesh_anna->LoadOBJ("meshes/anna.obj");
+    mesh_anna->LoadOBJ("mveshes/anna.obj");
     e2->mesh = mesh_anna;
     Image* tex_anna = new Image();
     tex_anna->LoadTGA("textures/anna_color_specular.tga", true);
@@ -178,23 +178,50 @@ void Application::Init(void)
 void Application::Render()
 {
     framebuffer.Fill(Color::BLACK);
-    // Clear zbuffer with a very large value
-    zbuffer->Fill(1e9f);
+
+    // Clear zbuffer
+    if (zbuffer)
+        zbuffer->Fill(1e9f);
+
+    // Apply global interactivity to all entities
+    // we use auto basically to avoid doing the same lines of code for each entity
+    // in this way we can simplify the code, make it much more readable and shorter
+    auto applySettings = [&](Entity* e)
+    {
+        if (!e) return;
+
+        e->useTexture = useTexture;
+        e->useZBuffer = useZBuffer;
+        e->interpolateUV = interpolateUV;
+
+        if (wireframe)
+            e->mode = Entity::eRenderMode::WIREFRAME;
+        else
+            e->mode = interpolateUV ? Entity::eRenderMode::TRIANGLES_INTERPOLATED
+                                    : Entity::eRenderMode::TRIANGLES;
+    };
+
+    applySettings(single);
+    applySettings(e1);
+    applySettings(e2);
+    applySettings(e3);
+
     FloatImage* zb = useZBuffer ? zbuffer : NULL;
 
-    if (mode == 1) // SINGLE ENTITY
+    // Now control the change between modes
+    if (mode == 1)
     {
-        if (single) single->Render(&framebuffer, &camera, zbuffer);
+        if (single) single->Render(&framebuffer, &camera, zb);
     }
-    else if (mode == 2) // MULTIPLE ANIMATED ENTITIES
+    else if (mode == 2)
     {
-        if (e1) e1->Render(&framebuffer, &camera, zbuffer);
-        if (e2) e2->Render(&framebuffer, &camera, zbuffer);
-        if (e3) e3->Render(&framebuffer, &camera, zbuffer);
+        if (e1) e1->Render(&framebuffer, &camera, zb);
+        if (e2) e2->Render(&framebuffer, &camera, zb);
+        if (e3) e3->Render(&framebuffer, &camera, zb);
     }
+
     framebuffer.Render();
 }
-
 
 
 // Called after render
@@ -251,7 +278,11 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
         case SDLK_c:
             interpolateUV = !interpolateUV;
             break;
-
+        
+        case SDLK_w:
+            wireframe = !wireframe;
+            break;
+            
         // increase
         case SDLK_PLUS:
         case SDLK_KP_PLUS:
