@@ -114,7 +114,7 @@ void Application::Init(void)
     e1 = new Entity();
     e1->base_position = Vector3(-1.0f, 0.8f, 0.0f);
     e1->base_scale = 1.5f;
-    e1->speed = 1.3f;
+    e1->speed = 0.5f;
     
     // use lee text/mesh for e1 aswell
     e1->mesh = lee_mesh;
@@ -124,7 +124,7 @@ void Application::Init(void)
     e2 = new Entity();
     e2->base_position = Vector3(1.0f, 0.8f, 0.0f);
     e2->base_scale = 1.5f;
-    e2->speed = 1.3f;
+    e2->speed = 0.5f;
     
     // use anna mesh and text for second entity
     Mesh* mesh_anna = new Mesh();
@@ -139,7 +139,7 @@ void Application::Init(void)
     e3 = new Entity();
     e3->base_position = Vector3(0.0f, 0.5f, -1.0f);
     e3->base_scale = 1.5f;
-    e3->speed = 0.8f;
+    e3->speed = 0.3f;
     
     //use cleo mesh/text for third entity
     Mesh* mesh_cleo = new Mesh();
