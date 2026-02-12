@@ -112,8 +112,8 @@ void Application::Init(void)
     
     //Create first entity, on the left
     e1 = new Entity();
-    e1->base_position = Vector3(-1.5f, 0.8f, 0.0f);
-    e1->base_scale = 1.3f;
+    e1->base_position = Vector3(-1.0f, 0.8f, 0.0f);
+    e1->base_scale = 1.5f;
     e1->speed = 1.3f;
     
     // use lee text/mesh for e1 aswell
@@ -122,13 +122,13 @@ void Application::Init(void)
     
     // Create second entity, same as first bit on the right
     e2 = new Entity();
-    e2->base_position = Vector3(1.5f, 0.8f, 0.0f);
-    e2->base_scale = 1.3f;
+    e2->base_position = Vector3(1.0f, 0.8f, 0.0f);
+    e2->base_scale = 1.5f;
     e2->speed = 1.3f;
     
     // use anna mesh and text for second entity
     Mesh* mesh_anna = new Mesh();
-    mesh_anna->LoadOBJ("mveshes/anna.obj");
+    mesh_anna->LoadOBJ("meshes/anna.obj");
     e2->mesh = mesh_anna;
     Image* tex_anna = new Image();
     tex_anna->LoadTGA("textures/anna_color_specular.tga", true);
@@ -138,7 +138,7 @@ void Application::Init(void)
     // Create third entity, a bit smaller, centered, and rotating slower than the other 2
     e3 = new Entity();
     e3->base_position = Vector3(0.0f, 0.5f, -1.0f);
-    e3->base_scale = 1.0f;
+    e3->base_scale = 1.5f;
     e3->speed = 0.8f;
     
     //use cleo mesh/text for third entity
@@ -162,7 +162,7 @@ void Application::Init(void)
     // orbit params
     camera.yaw = 0.0f;
     camera.pitch = 0.0f;
-    camera.distance = 2.5f;
+    camera.distance = 2.0f;
 
     // compute eye
     camera.eye.x = camera.center.x + cosf(camera.pitch) * sinf(camera.yaw) * camera.distance;
