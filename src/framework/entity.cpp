@@ -72,6 +72,15 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         Vector2 s0 = clipToScreen(p0);
         Vector2 s1 = clipToScreen(p1);
         Vector2 s2 = clipToScreen(p2);
+        
+        // just use points with SetPixel function
+        if (mode == eRenderMode::POINTCLOUD)
+        {
+            framebuffer->SetPixel((int)s0.x, (int)s0.y, Color::WHITE);
+            framebuffer->SetPixel((int)s1.x, (int)s1.y, Color::WHITE);
+            framebuffer->SetPixel((int)s2.x, (int)s2.y, Color::WHITE);
+            continue;
+        }
 
         // Wireframe mode
         if (mode == eRenderMode::WIREFRAME)
