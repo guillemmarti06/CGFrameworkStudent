@@ -25,6 +25,7 @@ public:
     float base_scale;
     float speed;
     
+    // enum class to choose the mode in which we render
     enum class eRenderMode { POINTCLOUD, WIREFRAME, TRIANGLES, TRIANGLES_INTERPOLATED };
     eRenderMode mode = eRenderMode::TRIANGLES_INTERPOLATED;
 

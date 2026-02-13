@@ -603,6 +603,8 @@ float EdgeFunction(const Vector3& a, const Vector3& b, const Vector3& c)
 void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer)
 {
     // 1) Bounding box
+    // instead of looping through all the screen, we find the minimum rectangle
+    // containing the triangle
     int minX = (int)floor(std::min(t.p0.x, std::min(t.p1.x, t.p2.x)));
     int maxX = (int)ceil (std::max(t.p0.x, std::max(t.p1.x, t.p2.x)));
     int minY = (int)floor(std::min(t.p0.y, std::min(t.p1.y, t.p2.y)));
@@ -613,7 +615,7 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer
     if (maxX >= (int)width)  maxX = (int)width - 1;
     if (maxY >= (int)height) maxY = (int)height - 1;
 
-    // 2) Signed area
+    // 2) Signed area: cross product
     float area = (t.p1.x - t.p0.x) * (t.p2.y - t.p0.y) - (t.p1.y - t.p0.y) * (t.p2.x - t.p0.x);
     if (fabs(area) < 1e-6f)
         return;
@@ -621,6 +623,7 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer
     bool doZ = (zbuffer != NULL);
 
     // 3) Raster
+    // loop through all pixels in box
     for (int y = minY; y <= maxY; ++y)
     {
         for (int x = minX; x <= maxX; ++x)
@@ -628,10 +631,13 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer
             float px = x + 0.5f;
             float py = y + 0.5f;
 
+            // compute the weights
             float w0 = ((t.p1.x - px) * (t.p2.y - py) - (t.p1.y - py) * (t.p2.x - px));
             float w1 = ((t.p2.x - px) * (t.p0.y - py) - (t.p2.y - py) * (t.p0.x - px));
             float w2 = ((t.p0.x - px) * (t.p1.y - py) - (t.p0.y - py) * (t.p1.x - px));
 
+            // check if the point is inside the triangle!
+            
             bool inside = false;
             if (area > 0.0f)
                 inside = (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f);
@@ -641,11 +647,13 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer
             if (!inside)
                 continue;
 
+            // Compute alpha/beta/gamma (proportion of area of the each triangle
+            // from the total area of the big triangle
             float alpha = w0 / area;
             float beta  = w1 / area;
             float gamma = w2 / area;
 
-            // Depth test (optional)
+            // Depth test (in case we use zbuffer)
             if (doZ)
             {
                 float z = alpha * t.p0.z + beta * t.p1.z + gamma * t.p2.z;
@@ -671,7 +679,7 @@ void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer
                 Color texColor = t.texture->GetPixel(tx, ty);
                 SetPixel(x, y, texColor);
             }
-            else
+            else // if no texture, compue the color by barycentric interpolation (simple)
             {
                 Color c = t.c0 * alpha + t.c1 * beta + t.c2 * gamma;
                 SetPixel(x, y, c);

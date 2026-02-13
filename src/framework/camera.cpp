@@ -80,8 +80,7 @@ void Camera::LookAt(const Vector3& eye, const Vector3& center, const Vector3& up
 	UpdateViewMatrix();
 }
 
-// Helper functions
-
+// Helper function to correct the bounds
 float clampf(float v, float minv, float maxv)
 {
     if (v < minv) return minv;
@@ -117,6 +116,7 @@ void Camera::UpdateViewMatrix()
     view_matrix.m[6] = new_up.z;
     view_matrix.m[7] = 0.0f;
 
+    // forward with inverted sign (as in a real camera)
     view_matrix.m[8]  = -forward.x;
     view_matrix.m[9]  = -forward.y;
     view_matrix.m[10] = -forward.z;
@@ -137,7 +137,7 @@ void Camera::UpdateProjectionMatrix()
     // Reset Matrix (Identity)
     projection_matrix.SetIdentity();
 
-    // Create the projection matrix manually
+    // Create the projection matrices manually
 
     if (type == PERSPECTIVE)
     {
@@ -147,6 +147,7 @@ void Camera::UpdateProjectionMatrix()
         // Clear first (to avoid old identity values)
         for (int i = 0; i < 16; ++i) projection_matrix.m[i] = 0.0f;
 
+        // set the values of the perspective projection matrix
         projection_matrix.m[0]  = f / aspect;
         projection_matrix.m[5]  = f;
         projection_matrix.m[10] = (far_plane + near_plane) / (near_plane - far_plane);
@@ -159,6 +160,7 @@ void Camera::UpdateProjectionMatrix()
         // Keep orthographic working too
         for (int i = 0; i < 16; ++i) projection_matrix.m[i] = 0.0f;
 
+        // set the values of the ortographic projection matrix
         projection_matrix.m[0]  = 2.0f / (right - left);
         projection_matrix.m[5]  = 2.0f / (top - bottom);
         projection_matrix.m[10] = -2.0f / (far_plane - near_plane);

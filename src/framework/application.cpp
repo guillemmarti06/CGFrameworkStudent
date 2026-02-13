@@ -149,7 +149,7 @@ void Application::Init(void)
     tex_cleo->LoadTGA("textures/cleo_color_specular.tga", true);
     e3->texture = tex_cleo;
     
-    // Camera init
+    // Camera init, set the values
     camera.type = Camera::PERSPECTIVE;
     camera.aspect = (float)framebuffer.width / (float)framebuffer.height;
     camera.fov = 60.0f * DEG2RAD;
@@ -201,6 +201,7 @@ void Application::Render()
                                     : Entity::eRenderMode::TRIANGLES;
     };
 
+    // apply the funcion to all entities
     applySettings(single);
     applySettings(e1);
     applySettings(e2);
@@ -208,12 +209,12 @@ void Application::Render()
 
     FloatImage* zb = useZBuffer ? zbuffer : NULL;
 
-    // Now control the change between modes
-    if (mode == 1)
+    // Now control the change between modes and render what we want
+    if (mode == 1) // single entity
     {
         if (single) single->Render(&framebuffer, &camera, zb);
     }
-    else if (mode == 2)
+    else if (mode == 2) // multiple entities
     {
         if (e1) e1->Render(&framebuffer, &camera, zb);
         if (e2) e2->Render(&framebuffer, &camera, zb);
@@ -227,7 +228,7 @@ void Application::Render()
 // Called after render
 void Application::Update(float seconds_elapsed)
 {
-    if (mode == 2)
+    if (mode == 2)  // just update the multiple entities, the single one is not rotating
     {
         if (e1) e1->Update(seconds_elapsed);
         if (e2) e2->Update(seconds_elapsed);
@@ -283,7 +284,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             wireframe = !wireframe;
             break;
             
-        // increase
+        // increase (move the object further away if selected toggle = V)
         case SDLK_PLUS:
         case SDLK_KP_PLUS:
         {
@@ -311,7 +312,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
         }
         break;
 
-        // decrease
+        // decrease (move the object closer to the camera if selected toggle = V)
         case SDLK_MINUS:
         case SDLK_KP_MINUS:
         {
@@ -322,7 +323,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             else if (cam_prop == PROP_FOV)
                 camera.fov -= 5.0f * DEG2RAD;
 
-            // --- CLAMPS ---
+            // clamps again
             if (camera.near_plane < 0.05f)
                 camera.near_plane = 0.05f;
 
@@ -341,6 +342,7 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
     }
 }
 
+// Control the mouse button up/down with simple booleans
 
 void Application::OnMouseButtonDown(SDL_MouseButtonEvent event)
 {
@@ -425,6 +427,7 @@ void Application::OnMouseMove(SDL_MouseButtonEvent event)
 void Application::OnWheel(SDL_MouseWheelEvent event)
 {
     // wheel.y: +1 forward, -1 backward
+    // here we are basically computing the zoom of the wheel of the mouse
     float zoom_factor = 1.0f - event.y * 0.1f;
     camera.distance *= zoom_factor;
 

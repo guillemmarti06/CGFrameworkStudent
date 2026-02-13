@@ -31,6 +31,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
     // If Z is disabled, we just ignore the zbuffer pointer
     FloatImage* zb = useZBuffer ? zBuffer : NULL;
 
+    // From clip space to Screen (convert [-1,1] to [0, W/H])
     auto clipToScreen = [framebuffer](const Vector3& p) -> Vector2
     {
         float x = (p.x * 0.5f + 0.5f) * (float)framebuffer->width;
@@ -38,6 +39,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         return Vector2(x, y);
     };
 
+    // check automatically clip bounds x,y in [-1,1]
     auto isInsideClipCube = [](const Vector3& p) -> bool
     {
         return (p.x >= -1.0f && p.x <= 1.0f &&
@@ -58,14 +60,17 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         Vector3 v1 = vertices[i + 1];
         Vector3 v2 = vertices[i + 2];
 
+        // Local -> World
         Vector3 w0 = model * v0;
         Vector3 w1 = model * v1;
         Vector3 w2 = model * v2;
 
+        // World -> View -> Clip space
         Vector3 p0 = camera->ProjectVector(w0);
         Vector3 p1 = camera->ProjectVector(w1);
         Vector3 p2 = camera->ProjectVector(w2);
 
+        // check clip bounds
         if (!isInsideClipCube(p0) || !isInsideClipCube(p1) || !isInsideClipCube(p2))
             continue;
 
@@ -76,6 +81,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         // just use points with SetPixel function
         if (mode == eRenderMode::POINTCLOUD)
         {
+            // just render with points (asked to do it, but not implemented afterwards with the interactivity
             framebuffer->SetPixel((int)s0.x, (int)s0.y, Color::WHITE);
             framebuffer->SetPixel((int)s1.x, (int)s1.y, Color::WHITE);
             framebuffer->SetPixel((int)s2.x, (int)s2.y, Color::WHITE);
@@ -85,6 +91,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         // Wireframe mode
         if (mode == eRenderMode::WIREFRAME)
         {
+            // reuse the line DDA function of LAB1 to draw edges of triangle
             framebuffer->DrawLineDDA((int)s0.x, (int)s0.y, (int)s1.x, (int)s1.y, Color::WHITE);
             framebuffer->DrawLineDDA((int)s1.x, (int)s1.y, (int)s2.x, (int)s2.y, Color::WHITE);
             framebuffer->DrawLineDDA((int)s2.x, (int)s2.y, (int)s0.x, (int)s0.y, Color::WHITE);
@@ -123,7 +130,7 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
         // Triangles Interpolated: texture (UV interp) OR vertex color per vertex (barycentric)
         if (mode == eRenderMode::TRIANGLES)
         {
-            // plain color (all same -> solid)
+            // plain color (all same)
             Color plain(180, 180, 180);
             tri.c0 = plain;
             tri.c1 = plain;
@@ -162,5 +169,5 @@ void Entity::Update(float seconds_elapsed)
     R.MakeRotationMatrix(angle, Vector3(0,1,0));
     S.MakeScaleMatrix(scale, scale, scale);
 
-    model = T * R * S;
+    model = T * R * S;  // multiply IN ORDER, important
 }
