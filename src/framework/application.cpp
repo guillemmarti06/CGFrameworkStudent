@@ -172,56 +172,25 @@ void Application::Init(void)
     camera.UpdateViewMatrix();
     camera.UpdateProjectionMatrix();
     camera.UpdateViewProjectionMatrix();
+    
+    // LAB 4: full screen quad
+    quad = new Mesh();
+    quad->CreateQuad();
+    shader = Shader::Get("shaders/quad.vs", "shaders/quad.fs");
 }
 
-// Render one frame
 void Application::Render()
 {
-    framebuffer.Fill(Color::BLACK);
+    glDisable(GL_DEPTH_TEST);
 
-    // Clear zbuffer
-    if (zbuffer)
-        zbuffer->Fill(1e9f);
+    if (!shader || !quad)
+        return;
 
-    // Apply global interactivity to all entities
-    // we use auto basically to avoid doing the same lines of code for each entity
-    // in this way we can simplify the code, make it much more readable and shorter
-    auto applySettings = [&](Entity* e)
-    {
-        if (!e) return;
-
-        e->useTexture = useTexture;
-        e->useZBuffer = useZBuffer;
-        e->interpolateUV = interpolateUV;
-
-        if (wireframe)
-            e->mode = Entity::eRenderMode::WIREFRAME;
-        else
-            e->mode = interpolateUV ? Entity::eRenderMode::TRIANGLES_INTERPOLATED
-                                    : Entity::eRenderMode::TRIANGLES;
-    };
-
-    // apply the funcion to all entities
-    applySettings(single);
-    applySettings(e1);
-    applySettings(e2);
-    applySettings(e3);
-
-    FloatImage* zb = useZBuffer ? zbuffer : NULL;
-
-    // Now control the change between modes and render what we want
-    if (mode == 1) // single entity
-    {
-        if (single) single->Render(&framebuffer, &camera, zb);
-    }
-    else if (mode == 2) // multiple entities
-    {
-        if (e1) e1->Render(&framebuffer, &camera, zb);
-        if (e2) e2->Render(&framebuffer, &camera, zb);
-        if (e3) e3->Render(&framebuffer, &camera, zb);
-    }
-
-    framebuffer.Render();
+    shader->Enable();
+    shader->SetFloat("u_mode", (float)formula_mode);
+    shader->SetFloat("u_aspect", (float)window_width / (float)window_height);
+    quad->Render();
+    shader->Disable();
 }
 
 
@@ -245,16 +214,32 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             exit(0);
             break;
 
-        // LAB 2 modes
+        // LAB 4 formula modes
         case SDLK_1:
-            mode = 1; // SINGLE ENTITY
+            formula_mode = 0;
             break;
 
         case SDLK_2:
-            mode = 2; // MULTIPLE ANIMATED ENTITIES
+            formula_mode = 1;
             break;
 
-        // select property of the camer
+        case SDLK_3:
+            formula_mode = 2;
+            break;
+
+        case SDLK_4:
+            formula_mode = 3;
+            break;
+
+        case SDLK_5:
+            formula_mode = 4;
+            break;
+
+        case SDLK_6:
+            formula_mode = 5;
+            break;
+
+        // select property of the camera
         case SDLK_n:
             cam_prop = PROP_NEAR;
             break;
@@ -266,25 +251,23 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
         case SDLK_v:
             cam_prop = PROP_FOV;
             break;
-            
-        // LAB 3 interactivity
+
         case SDLK_t:
             useTexture = !useTexture;
             break;
-        
+
         case SDLK_z:
             useZBuffer = !useZBuffer;
             break;
-        
+
         case SDLK_c:
             interpolateUV = !interpolateUV;
             break;
-        
+
         case SDLK_w:
             wireframe = !wireframe;
             break;
-            
-        // increase (move the object further away if selected toggle = V)
+
         case SDLK_PLUS:
         case SDLK_KP_PLUS:
         {
@@ -295,7 +278,6 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             else if (cam_prop == PROP_FOV)
                 camera.fov += 5.0f * DEG2RAD;
 
-            // clamps
             if (camera.near_plane < 0.05f)
                 camera.near_plane = 0.05f;
 
@@ -312,7 +294,6 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
         }
         break;
 
-        // decrease (move the object closer to the camera if selected toggle = V)
         case SDLK_MINUS:
         case SDLK_KP_MINUS:
         {
@@ -323,7 +304,6 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             else if (cam_prop == PROP_FOV)
                 camera.fov -= 5.0f * DEG2RAD;
 
-            // clamps again
             if (camera.near_plane < 0.05f)
                 camera.near_plane = 0.05f;
 

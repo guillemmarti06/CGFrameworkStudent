@@ -12,6 +12,8 @@
 #include "mesh.h"
 #include "camera.h"
 #include "entity.h"
+#include "shader.h"
+#include "texture.h"
 
 class Application
 {
@@ -123,6 +125,10 @@ public:
     CameraProp cam_prop = PROP_NEAR;
     
     FloatImage* zbuffer = NULL;
+    // LAB 4
+    Mesh* quad = nullptr;
+    Shader* shader = nullptr;
+    int formula_mode = 0;
     
     // used for Lab3 interactivity
     bool useTexture = true;      // T

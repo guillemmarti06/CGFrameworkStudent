@@ -602,84 +602,98 @@ float EdgeFunction(const Vector3& a, const Vector3& b, const Vector3& c)
 
 void Image::DrawTriangleInterpolated(const sTriangleInfo& t, FloatImage* zbuffer)
 {
-    // 1) Bounding box
-    // instead of looping through all the screen, we find the minimum rectangle
-    // containing the triangle
-    int minX = (int)floor(std::min(t.p0.x, std::min(t.p1.x, t.p2.x)));
-    int maxX = (int)ceil (std::max(t.p0.x, std::max(t.p1.x, t.p2.x)));
-    int minY = (int)floor(std::min(t.p0.y, std::min(t.p1.y, t.p2.y)));
-    int maxY = (int)ceil (std::max(t.p0.y, std::max(t.p1.y, t.p2.y)));
+    // Build scanline table (AET-style)
+    std::vector<Cell> table;
+    table.resize(height);
 
-    if (minX < 0) minX = 0;
-    if (minY < 0) minY = 0;
-    if (maxX >= (int)width)  maxX = (int)width - 1;
-    if (maxY >= (int)height) maxY = (int)height - 1;
+    int x0 = (int)std::round(t.p0.x);
+    int y0 = (int)std::round(t.p0.y);
+    int x1 = (int)std::round(t.p1.x);
+    int y1 = (int)std::round(t.p1.y);
+    int x2 = (int)std::round(t.p2.x);
+    int y2 = (int)std::round(t.p2.y);
 
-    // 2) Signed area: cross product
-    float area = (t.p1.x - t.p0.x) * (t.p2.y - t.p0.y) - (t.p1.y - t.p0.y) * (t.p2.x - t.p0.x);
+    ScanLineDDA(x0, y0, x1, y1, table);
+    ScanLineDDA(x1, y1, x2, y2, table);
+    ScanLineDDA(x2, y2, x0, y0, table);
+
+    float area = EdgeFunction(t.p0, t.p1, t.p2);
     if (fabs(area) < 1e-6f)
         return;
 
     bool doZ = (zbuffer != NULL);
+    const float epsilon = -1e-5f;
 
-    // 3) Raster
-    // loop through all pixels in box
+    int minY = std::max(0, std::min(y0, std::min(y1, y2)));
+    int maxY = std::min((int)height - 1, std::max(y0, std::max(y1, y2)));
+
     for (int y = minY; y <= maxY; ++y)
     {
+        int minX = table[y].minx;
+        int maxX = table[y].maxx;
+
+        if (minX > maxX)
+            continue;
+
+        minX = std::max(minX, 0);
+        maxX = std::min(maxX, (int)width - 1);
+
         for (int x = minX; x <= maxX; ++x)
         {
-            float px = x + 0.5f;
-            float py = y + 0.5f;
+            Vector3 p((float)x + 0.5f, (float)y + 0.5f, 0.0f);
 
-            // compute the weights
-            float w0 = ((t.p1.x - px) * (t.p2.y - py) - (t.p1.y - py) * (t.p2.x - px));
-            float w1 = ((t.p2.x - px) * (t.p0.y - py) - (t.p2.y - py) * (t.p0.x - px));
-            float w2 = ((t.p0.x - px) * (t.p1.y - py) - (t.p0.y - py) * (t.p1.x - px));
+            // Barycentric coordinates from sub-triangle areas
+            float alpha = EdgeFunction(t.p1, t.p2, p) / area;
+            float beta  = EdgeFunction(t.p2, t.p0, p) / area;
+            float gamma = EdgeFunction(t.p0, t.p1, p) / area;
 
-            // check if the point is inside the triangle!
-            
-            bool inside = false;
-            if (area > 0.0f)
-                inside = (w0 >= 0.0f && w1 >= 0.0f && w2 >= 0.0f);
-            else
-                inside = (w0 <= 0.0f && w1 <= 0.0f && w2 <= 0.0f);
-
-            if (!inside)
+            // Reject pixels outside triangle
+            if (alpha < epsilon || beta < epsilon || gamma < epsilon)
                 continue;
 
-            // Compute alpha/beta/gamma (proportion of area of the each triangle
-            // from the total area of the big triangle
-            float alpha = w0 / area;
-            float beta  = w1 / area;
-            float gamma = w2 / area;
+            // Clamp small negative precision errors
+            if (alpha < 0.0f) alpha = 0.0f;
+            if (beta  < 0.0f) beta  = 0.0f;
+            if (gamma < 0.0f) gamma = 0.0f;
 
-            // Depth test (in case we use zbuffer)
+            // Normalize barycentric coordinates so they add up to 1
+            float sum = alpha + beta + gamma;
+            if (sum <= 1e-6f)
+                continue;
+
+            alpha /= sum;
+            beta  /= sum;
+            gamma /= sum;
+
+            // Z-buffer
             if (doZ)
             {
                 float z = alpha * t.p0.z + beta * t.p1.z + gamma * t.p2.z;
                 float currentZ = zbuffer->GetPixel(x, y);
+
                 if (z >= currentZ)
                     continue;
+
                 zbuffer->SetPixel(x, y, z);
             }
 
-            // Choose shading mode:
-            // If useTexture and texture exists -> sample texture using interpolated UV
-            // Else -> interpolate colors (or plain color if all c0=c1=c2)
+            // Texture or interpolated color
             if (t.useTexture && t.texture != NULL)
             {
                 Vector2 uv = t.uv0 * alpha + t.uv1 * beta + t.uv2 * gamma;
 
-                if (uv.x < 0) uv.x = 0; if (uv.x > 1) uv.x = 1;
-                if (uv.y < 0) uv.y = 0; if (uv.y > 1) uv.y = 1;
+                if (uv.x < 0.0f) uv.x = 0.0f;
+                if (uv.x > 1.0f) uv.x = 1.0f;
+                if (uv.y < 0.0f) uv.y = 0.0f;
+                if (uv.y > 1.0f) uv.y = 1.0f;
 
-                int tx = (int)(uv.x * (t.texture->width  - 1));
+                int tx = (int)(uv.x * (t.texture->width - 1));
                 int ty = (int)(uv.y * (t.texture->height - 1));
 
                 Color texColor = t.texture->GetPixel(tx, ty);
                 SetPixel(x, y, texColor);
             }
-            else // if no texture, compue the color by barycentric interpolation (simple)
+            else
             {
                 Color c = t.c0 * alpha + t.c1 * beta + t.c2 * gamma;
                 SetPixel(x, y, c);

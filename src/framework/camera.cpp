@@ -90,42 +90,44 @@ float clampf(float v, float minv, float maxv)
 
 void Camera::UpdateViewMatrix()
 {
-    // Reset Matrix (Identity)
     view_matrix.SetIdentity();
 
-    // Create the view matrix manually
+    // Build camera basis following the lab slides:
+    // forward = vector from center to eye
+    // right   = up x forward
+    // up      = forward x right
 
-    // Camera basis
-    Vector3 forward = (center - eye);
+    Vector3 forward = eye - center;
     forward.Normalize();
 
-    Vector3 right = forward.Cross(up);
+    Vector3 right = up.Cross(forward);
     right.Normalize();
 
-    Vector3 new_up = right.Cross(forward);
+    Vector3 new_up = forward.Cross(right);
     new_up.Normalize();
 
-    // Fill view matrix
+    // Column 0: right
     view_matrix.m[0] = right.x;
     view_matrix.m[1] = right.y;
     view_matrix.m[2] = right.z;
     view_matrix.m[3] = 0.0f;
 
+    // Column 1: up
     view_matrix.m[4] = new_up.x;
     view_matrix.m[5] = new_up.y;
     view_matrix.m[6] = new_up.z;
     view_matrix.m[7] = 0.0f;
 
-    // forward with inverted sign (as in a real camera)
-    view_matrix.m[8]  = -forward.x;
-    view_matrix.m[9]  = -forward.y;
-    view_matrix.m[10] = -forward.z;
+    // Column 2: forward
+    view_matrix.m[8]  = forward.x;
+    view_matrix.m[9]  = forward.y;
+    view_matrix.m[10] = forward.z;
     view_matrix.m[11] = 0.0f;
 
-    // Translation part
+    // Column 3: translation
     view_matrix.m[12] = -right.Dot(eye);
     view_matrix.m[13] = -new_up.Dot(eye);
-    view_matrix.m[14] =  forward.Dot(eye);
+    view_matrix.m[14] = -forward.Dot(eye);
     view_matrix.m[15] = 1.0f;
 
     UpdateViewProjectionMatrix();
