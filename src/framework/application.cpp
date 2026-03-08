@@ -118,14 +118,19 @@ void Application::Init(void)
     e1 = new Entity();
     e1->base_position = Vector3(-1.0f, 0.8f, 0.0f);
     e1->base_scale = 1.5f;
-    e1->speed = 0.5f;
+    e1->speed = 0.8f;
     
     // use lee text/mesh for e1 aswell
     e1->mesh = lee_mesh;
     e1->texture = tex_lee;
     e1->material = new Material();
-    e1->material->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e1->material->shader = Shader::Get("shaders/gouraud.vs", "shaders/gouraud.fs");
     e1->material->color_texture = Texture::Get("textures/lee_color_specular.tga");
+    e1->material->normal_texture = Texture::Get("textures/lee_normal.tga");
+    e1->material->Ka = Vector3(0.1f, 0.1f, 0.1f);
+    e1->material->Kd = Vector3(1.0f, 1.0f, 1.0f);
+    e1->material->Ks = Vector3(1.0f, 1.0f, 1.0f);
+    e1->material->shininess = 50.0f;
     
     // Create second entity, same as first bit on the right
     e2 = new Entity();
@@ -141,15 +146,20 @@ void Application::Init(void)
     tex_anna->LoadTGA("textures/anna_color_specular.tga", true);
     e2->texture = tex_anna;
     e2->material = new Material();
-    e2->material->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e2->material->shader = Shader::Get("shaders/gouraud.vs", "shaders/gouraud.fs");
     e2->material->color_texture = Texture::Get("textures/anna_color_specular.tga");
+    e2->material->normal_texture = Texture::Get("textures/anna_normal.tga");
+    e2->material->Ka = Vector3(0.1f, 0.1f, 0.1f);
+    e2->material->Kd = Vector3(1.0f, 1.0f, 1.0f);
+    e2->material->Ks = Vector3(1.0f, 1.0f, 1.0f);
+    e2->material->shininess = 50.0f;
 
     
     // Create third entity, a bit smaller, centered, and rotating slower than the other 2
     e3 = new Entity();
     e3->base_position = Vector3(0.0f, 0.5f, -1.0f);
     e3->base_scale = 1.5f;
-    e3->speed = 0.3f;
+    e3->speed = 0.8f;
     
     //use cleo mesh/text for third entity
     Mesh* mesh_cleo = new Mesh();
@@ -159,8 +169,13 @@ void Application::Init(void)
     tex_cleo->LoadTGA("textures/cleo_color_specular.tga", true);
     e3->texture = tex_cleo;
     e3->material = new Material();
-    e3->material->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e3->material->shader = Shader::Get("shaders/gouraud.vs", "shaders/gouraud.fs");
     e3->material->color_texture = Texture::Get("textures/cleo_color_specular.tga");
+    e3->material->normal_texture = Texture::Get("textures/cleo_normal.tga");
+    e3->material->Ka = Vector3(0.1f, 0.1f, 0.1f);
+    e3->material->Kd = Vector3(1.0f, 1.0f, 1.0f);
+    e3->material->Ks = Vector3(1.0f, 1.0f, 1.0f);
+    e3->material->shininess = 50.0f;
     
     // Camera init, set the values
     camera.type = Camera::PERSPECTIVE;
@@ -191,43 +206,98 @@ void Application::Init(void)
     quad->CreateQuad();
     shader = Shader::Get("shaders/quad.vs", "shaders/quad.fs");
     image_texture = Texture::Get("images/fruits.png");
+    
+    second_light.position = Vector3(-1.5f, 1.2f, 1.0f);
+    second_light.intensity = Vector3(0.0f, 1.5f, 0.0f);
 }
 
 void Application::Render()
 {
-    // Lab 5 placeholder
+    // LAB 5
     if (current_lab == 5)
     {
-        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glDisable(GL_BLEND);
 
-        if (!shader || !quad)
+        // Choose shader depending on current Lab 5 mode
+        Shader* lab5_shader = nullptr;
+        if (lab5_shading == LAB5_GOURAUD)
+            lab5_shader = Shader::Get("shaders/gouraud.vs", "shaders/gouraud.fs");
+        else
+            lab5_shader = Shader::Get("shaders/phong.vs", "shaders/phong.fs");
+
+        if (e1 && e1->material) e1->material->shader = lab5_shader;
+        if (e2 && e2->material) e2->material->shader = lab5_shader;
+        if (e3 && e3->material) e3->material->shader = lab5_shader;
+
+        uniform_data.viewprojection = camera.viewprojection_matrix;
+        uniform_data.camera_position = camera.eye;
+
+        uniform_data.use_color_texture = lab5_use_color_texture ? 1 : 0;
+        uniform_data.use_specular_texture = lab5_use_specular_texture ? 1 : 0;
+        uniform_data.use_normal_texture = lab5_use_normal_texture ? 1 : 0;
+
+        // First light
+        uniform_data.ambient_intensity = Vector3(0.2f, 0.2f, 0.2f);
+        uniform_data.light.position = Vector3(0.0f, 1.5f, 1.5f);
+        uniform_data.light.intensity = Vector3(4.0f, 4.0f, 4.0f);
+
+        // Single light, or Gouraud mode
+        if (lab5_shading == LAB5_GOURAUD || lab5_num_lights == 1)
+        {
+            if (e1) e1->Render(uniform_data);
+            if (e2) e2->Render(uniform_data);
+            if (e3) e3->Render(uniform_data);
+
             return;
+        }
 
-        shader->Enable();
-        shader->SetFloat("u_mode", 0.0f);
-        shader->SetFloat("u_aspect", (float)window_width / (float)window_height);
-        shader->SetFloat("u_time", time);
+        // Multipass only for PHONG with 2 lights
+        glDepthFunc(GL_LEQUAL);
 
-        if (image_texture)
-            shader->SetTexture("u_texture", image_texture);
+        // First pass
+        glDisable(GL_BLEND);
+        if (e1) e1->Render(uniform_data);
+        if (e2) e2->Render(uniform_data);
+        if (e3) e3->Render(uniform_data);
 
-        quad->Render();
-        shader->Disable();
+        // Second pass: additive blending, no ambient
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+
+        uniform_data.ambient_intensity = Vector3(0.0f, 0.0f, 0.0f);
+        uniform_data.light = second_light;
+
+        if (e1) e1->Render(uniform_data);
+        if (e2) e2->Render(uniform_data);
+        if (e3) e3->Render(uniform_data);
+
+        glDisable(GL_BLEND);
+        glDepthFunc(GL_LESS);
+
         return;
     }
 
-    // Task 4: GPU mesh
+    // LAB 4 - Task 4: GPU mesh with raster shader
     if (current_task == 4)
     {
         glEnable(GL_DEPTH_TEST);
 
+        uniform_data.viewprojection = camera.viewprojection_matrix;
+        uniform_data.camera_position = camera.eye;
+        uniform_data.ambient_intensity = Vector3(0.0f, 0.0f, 0.0f);
+        uniform_data.use_color_texture = 0;
+        uniform_data.use_specular_texture = 0;
+        uniform_data.use_normal_texture = 0;
+
         if (single)
-            single->Render(&camera);
+            single->Render(uniform_data);
 
         return;
     }
 
-    // Tasks 1, 2, 3: full screen quad
+    // LAB 4 - Tasks 1,2,3: full screen quad
     glDisable(GL_DEPTH_TEST);
 
     if (!shader || !quad)
@@ -236,27 +306,17 @@ void Application::Render()
     float mode = 0.0f;
 
     if (current_task == 1)
-    {
-        mode = (float)current_subtask; // 0..5
-    }
+        mode = (float)current_subtask;
     else if (current_task == 2)
-    {
-        mode = 6.0f + (float)current_subtask; // 6..11
-    }
+        mode = 6.0f + (float)current_subtask;
     else if (current_task == 3)
     {
-        if (current_subtask == 0)
-            mode = 12.0f; // a
-        else if (current_subtask == 1)
-            mode = 13.0f; // b
-        else if (current_subtask == 2)
-            mode = 12.0f; // c
-        else if (current_subtask == 3)
-            mode = 13.0f; // d
-        else if (current_subtask == 4)
-            mode = 12.0f; // e
-        else
-            mode = 13.0f; // f
+        if (current_subtask == 0) mode = 12.0f;
+        else if (current_subtask == 1) mode = 13.0f;
+        else if (current_subtask == 2) mode = 12.0f;
+        else if (current_subtask == 3) mode = 13.0f;
+        else if (current_subtask == 4) mode = 12.0f;
+        else mode = 13.0f;
     }
 
     shader->Enable();
@@ -275,8 +335,35 @@ void Application::Render()
 void Application::Update(float seconds_elapsed)
 {
     time += seconds_elapsed;
-}
 
+    Matrix44 T, S;
+
+    if (single)
+    {
+        single->model.MakeTranslationMatrix(0.0f, 0.8f, 0.0f);
+    }
+
+    if (e1)
+    {
+        T.MakeTranslationMatrix(e1->base_position.x, e1->base_position.y, e1->base_position.z);
+        S.MakeScaleMatrix(e1->base_scale, e1->base_scale, e1->base_scale);
+        e1->model = T * S;
+    }
+
+    if (e2)
+    {
+        T.MakeTranslationMatrix(e2->base_position.x, e2->base_position.y, e2->base_position.z);
+        S.MakeScaleMatrix(e2->base_scale, e2->base_scale, e2->base_scale);
+        e2->model = T * S;
+    }
+
+    if (e3)
+    {
+        T.MakeTranslationMatrix(e3->base_position.x, e3->base_position.y, e3->base_position.z);
+        S.MakeScaleMatrix(e3->base_scale, e3->base_scale, e3->base_scale);
+        e3->model = T * S;
+    }
+}
 //keyboard press event
 void Application::OnKeyPressed(SDL_KeyboardEvent event)
 {
@@ -286,49 +373,77 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             exit(0);
             break;
 
-        // Show Tasks 1 to 4
-        case SDLK_1:
-            current_task = 1;
+        case SDLK_g:
+            if (current_lab == 5)
+                lab5_shading = LAB5_GOURAUD;
             break;
 
-        case SDLK_2:
-            current_task = 2;
-            break;
-
-        case SDLK_3:
-            current_task = 3;
-            break;
-
-        case SDLK_4:
-            current_task = 4;
-            break;
-
-        // Show subtasks a to f for Tasks 1, 2, 3
-        case SDLK_a:
-            current_subtask = 0;
-            break;
-
-        case SDLK_b:
-            current_subtask = 1;
+        case SDLK_p:
+            if (current_lab == 5)
+                lab5_shading = LAB5_PHONG;
             break;
 
         case SDLK_c:
-            current_subtask = 2;
+            if (current_lab == 5 && lab5_shading == LAB5_PHONG)
+                lab5_use_color_texture = !lab5_use_color_texture;
+            else if (current_lab == 4)
+                current_subtask = 2;
+            break;
+
+        case SDLK_s:
+            if (current_lab == 5 && lab5_shading == LAB5_PHONG)
+                lab5_use_specular_texture = !lab5_use_specular_texture;
+            break;
+
+        case SDLK_n:
+            if (current_lab == 5 && lab5_shading == LAB5_PHONG)
+                lab5_use_normal_texture = !lab5_use_normal_texture;
+            break;
+
+        case SDLK_1:
+            if (current_lab == 5 && lab5_shading == LAB5_PHONG)
+                lab5_num_lights = 1;
+            else
+                current_task = 1;
+            break;
+
+        case SDLK_2:
+            if (current_lab == 5 && lab5_shading == LAB5_PHONG)
+                lab5_num_lights = 2;
+            else
+                current_task = 2;
+            break;
+
+        case SDLK_3:
+            if (current_lab == 4)
+                current_task = 3;
+            break;
+
+        case SDLK_4:
+            if (current_lab == 4)
+                current_task = 4;
+            break;
+
+        case SDLK_a:
+            if (current_lab == 4) current_subtask = 0;
+            break;
+
+        case SDLK_b:
+            if (current_lab == 4) current_subtask = 1;
             break;
 
         case SDLK_d:
-            current_subtask = 3;
+            if (current_lab == 4) current_subtask = 3;
             break;
 
         case SDLK_e:
-            current_subtask = 4;
+            if (current_lab == 4) current_subtask = 4;
             break;
 
         case SDLK_f:
-            current_subtask = 5;
+            if (current_lab == 4) current_subtask = 5;
             break;
 
-        // Change between lab 4 and lab 5 scenes
         case SDLK_l:
             if (current_lab == 4)
                 current_lab = 5;

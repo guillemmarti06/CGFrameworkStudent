@@ -23,22 +23,37 @@ struct sLight
     }
 };
 
+struct sUniformData
+{
+    Matrix44 model;
+    Matrix44 viewprojection;
+
+    Vector3 camera_position;
+    Vector3 ambient_intensity;
+
+    sLight light;
+
+    int use_color_texture;
+    int use_specular_texture;
+    int use_normal_texture;
+};
+
 class Material
 {
 public:
     Shader* shader = nullptr;
-
+    
     // Material textures
     Texture* color_texture = nullptr;
     Texture* normal_texture = nullptr;
-
+    
     // Material coefficients
     Vector3 Ka;
     Vector3 Kd;
     Vector3 Ks;
     float shininess = 50.0f;
-
+    
     Material();
-    void Enable();
+    void Enable(const sUniformData& uniformData);
     void Disable();
 };

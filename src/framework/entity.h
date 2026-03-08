@@ -47,7 +47,7 @@ public:
     void Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer);
 
     // New GPU renderer (Lab 4)
-    void Render(Camera* camera);
+    void Render(sUniformData& uniformData);
     
     void Update(float seconds_elapsed);
 };

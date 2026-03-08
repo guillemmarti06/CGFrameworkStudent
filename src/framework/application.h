@@ -14,6 +14,7 @@
 #include "entity.h"
 #include "shader.h"
 #include "texture.h"
+#include "material.h"
 
 class Application
 {
@@ -125,17 +126,28 @@ public:
     CameraProp cam_prop = PROP_NEAR;
     
     FloatImage* zbuffer = NULL;
-    // LAB 4
+    // LAB 4 & 5
     Mesh* quad = nullptr;
     Shader* shader = nullptr;
     Texture* image_texture = nullptr;
     int formula_mode = 0;
     bool render_gpu_mesh = false;
     
+    sUniformData uniform_data;
+    
     int current_lab = 4;
     int current_task = 1;
     int current_subtask = 0; // 0=a, 1=b, ..., 5=f
+    sLight second_light;
     
+    enum Lab5ShadingMode { LAB5_GOURAUD, LAB5_PHONG };
+    Lab5ShadingMode lab5_shading = LAB5_GOURAUD;
+
+    bool lab5_use_color_texture = false;
+    bool lab5_use_specular_texture = false;
+    bool lab5_use_normal_texture = false;
+
+    int lab5_num_lights = 1;
     
     // used for Lab3 interactivity
     bool useTexture = true;      // T

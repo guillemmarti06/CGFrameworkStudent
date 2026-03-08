@@ -149,21 +149,16 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
     }
 }
 
-void Entity::Render(Camera* camera)
+void Entity::Render(sUniformData& uniformData)
 {
-    if (!mesh || !camera || !material || !material->shader)
+    if (!mesh || !material || !material->shader)
         return;
 
-    material->Enable();
+    // Entity is the place where the model matrix is known
+    uniformData.model = model;
 
-    material->shader->SetMatrix44("u_model", model);
-    material->shader->SetMatrix44("u_viewprojection", camera->viewprojection_matrix);
-
-    if (material->color_texture)
-        material->shader->SetTexture("u_texture", material->color_texture);
-
+    material->Enable(uniformData);
     mesh->Render();
-
     material->Disable();
 }
 
