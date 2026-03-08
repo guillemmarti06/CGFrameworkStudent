@@ -107,8 +107,10 @@ void Application::Init(void)
     Image* tex_lee = new Image();
     tex_lee->LoadTGA("textures/lee_color_specular.tga", true);
     single->texture = tex_lee;
-    single->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
-    single->gpu_texture = Texture::Get("textures/lee_color_specular.tga");
+    //Lab5
+    single->material = new Material();
+    single->material->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    single->material->color_texture = Texture::Get("textures/lee_color_specular.tga");
 
     //MULTIPLE ENTITIES
     
@@ -121,8 +123,9 @@ void Application::Init(void)
     // use lee text/mesh for e1 aswell
     e1->mesh = lee_mesh;
     e1->texture = tex_lee;
-    e1->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
-    e1->gpu_texture = Texture::Get("textures/lee_color_specular.tga");
+    e1->material = new Material();
+    e1->material->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e1->material->color_texture = Texture::Get("textures/lee_color_specular.tga");
     
     // Create second entity, same as first bit on the right
     e2 = new Entity();
@@ -137,8 +140,9 @@ void Application::Init(void)
     Image* tex_anna = new Image();
     tex_anna->LoadTGA("textures/anna_color_specular.tga", true);
     e2->texture = tex_anna;
-    e2->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
-    e2->gpu_texture = Texture::Get("textures/anna_color_specular.tga");
+    e2->material = new Material();
+    e2->material->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e2->material->color_texture = Texture::Get("textures/anna_color_specular.tga");
 
     
     // Create third entity, a bit smaller, centered, and rotating slower than the other 2
@@ -154,8 +158,9 @@ void Application::Init(void)
     Image* tex_cleo = new Image();
     tex_cleo->LoadTGA("textures/cleo_color_specular.tga", true);
     e3->texture = tex_cleo;
-    e3->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
-    e3->gpu_texture = Texture::Get("textures/cleo_color_specular.tga");
+    e3->material = new Material();
+    e3->material->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e3->material->color_texture = Texture::Get("textures/cleo_color_specular.tga");
     
     // Camera init, set the values
     camera.type = Camera::PERSPECTIVE;

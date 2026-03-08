@@ -13,6 +13,7 @@
 #include "camera.h"
 #include "shader.h"
 #include "texture.h"
+#include "material.h"
 
 // Entity: a renderable object that has a mesh + a model matrix (T/R/S)
 class Entity
@@ -22,9 +23,8 @@ public:
     Matrix44 model;  // Model matrix (scale/rotate/translate)
     Image* texture = NULL;
     
-    // Lab4
-    Texture* gpu_texture = NULL;
-    Shader* shader = NULL;
+    //Lab5
+    Material* material = nullptr;
     
     // Variables to make each entity different (simple scene)
     Vector3 base_position;
