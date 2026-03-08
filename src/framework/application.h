@@ -128,7 +128,14 @@ public:
     // LAB 4
     Mesh* quad = nullptr;
     Shader* shader = nullptr;
+    Texture* image_texture = nullptr;
     int formula_mode = 0;
+    bool render_gpu_mesh = false;
+    
+    int current_lab = 4;
+    int current_task = 1;
+    int current_subtask = 0; // 0=a, 1=b, ..., 5=f
+    
     
     // used for Lab3 interactivity
     bool useTexture = true;      // T

@@ -149,6 +149,23 @@ void Entity::Render(Image* framebuffer, Camera* camera, FloatImage* zBuffer)
     }
 }
 
+void Entity::Render(Camera* camera)
+{
+    if (!mesh || !camera || !shader)
+        return;
+
+    shader->Enable();
+    shader->SetMatrix44("u_model", model);
+    shader->SetMatrix44("u_viewprojection", camera->viewprojection_matrix);
+
+    if (gpu_texture)
+        shader->SetTexture("u_texture", gpu_texture);
+
+    mesh->Render();
+
+    shader->Disable();
+}
+
 
 void Entity::Update(float seconds_elapsed)
 {

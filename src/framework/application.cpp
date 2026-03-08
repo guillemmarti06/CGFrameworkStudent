@@ -107,6 +107,8 @@ void Application::Init(void)
     Image* tex_lee = new Image();
     tex_lee->LoadTGA("textures/lee_color_specular.tga", true);
     single->texture = tex_lee;
+    single->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    single->gpu_texture = Texture::Get("textures/lee_color_specular.tga");
 
     //MULTIPLE ENTITIES
     
@@ -119,6 +121,8 @@ void Application::Init(void)
     // use lee text/mesh for e1 aswell
     e1->mesh = lee_mesh;
     e1->texture = tex_lee;
+    e1->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e1->gpu_texture = Texture::Get("textures/lee_color_specular.tga");
     
     // Create second entity, same as first bit on the right
     e2 = new Entity();
@@ -133,6 +137,8 @@ void Application::Init(void)
     Image* tex_anna = new Image();
     tex_anna->LoadTGA("textures/anna_color_specular.tga", true);
     e2->texture = tex_anna;
+    e2->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e2->gpu_texture = Texture::Get("textures/anna_color_specular.tga");
 
     
     // Create third entity, a bit smaller, centered, and rotating slower than the other 2
@@ -148,6 +154,8 @@ void Application::Init(void)
     Image* tex_cleo = new Image();
     tex_cleo->LoadTGA("textures/cleo_color_specular.tga", true);
     e3->texture = tex_cleo;
+    e3->shader = Shader::Get("shaders/raster.vs", "shaders/raster.fs");
+    e3->gpu_texture = Texture::Get("textures/cleo_color_specular.tga");
     
     // Camera init, set the values
     camera.type = Camera::PERSPECTIVE;
@@ -177,32 +185,91 @@ void Application::Init(void)
     quad = new Mesh();
     quad->CreateQuad();
     shader = Shader::Get("shaders/quad.vs", "shaders/quad.fs");
+    image_texture = Texture::Get("images/fruits.png");
 }
 
 void Application::Render()
 {
+    // Lab 5 placeholder
+    if (current_lab == 5)
+    {
+        glDisable(GL_DEPTH_TEST);
+
+        if (!shader || !quad)
+            return;
+
+        shader->Enable();
+        shader->SetFloat("u_mode", 0.0f);
+        shader->SetFloat("u_aspect", (float)window_width / (float)window_height);
+        shader->SetFloat("u_time", time);
+
+        if (image_texture)
+            shader->SetTexture("u_texture", image_texture);
+
+        quad->Render();
+        shader->Disable();
+        return;
+    }
+
+    // Task 4: GPU mesh
+    if (current_task == 4)
+    {
+        glEnable(GL_DEPTH_TEST);
+
+        if (single)
+            single->Render(&camera);
+
+        return;
+    }
+
+    // Tasks 1, 2, 3: full screen quad
     glDisable(GL_DEPTH_TEST);
 
     if (!shader || !quad)
         return;
 
+    float mode = 0.0f;
+
+    if (current_task == 1)
+    {
+        mode = (float)current_subtask; // 0..5
+    }
+    else if (current_task == 2)
+    {
+        mode = 6.0f + (float)current_subtask; // 6..11
+    }
+    else if (current_task == 3)
+    {
+        if (current_subtask == 0)
+            mode = 12.0f; // a
+        else if (current_subtask == 1)
+            mode = 13.0f; // b
+        else if (current_subtask == 2)
+            mode = 12.0f; // c
+        else if (current_subtask == 3)
+            mode = 13.0f; // d
+        else if (current_subtask == 4)
+            mode = 12.0f; // e
+        else
+            mode = 13.0f; // f
+    }
+
     shader->Enable();
-    shader->SetFloat("u_mode", (float)formula_mode);
+    shader->SetFloat("u_mode", mode);
     shader->SetFloat("u_aspect", (float)window_width / (float)window_height);
+    shader->SetFloat("u_time", time);
+
+    if (image_texture)
+        shader->SetTexture("u_texture", image_texture);
+
     quad->Render();
     shader->Disable();
 }
 
-
 // Called after render
 void Application::Update(float seconds_elapsed)
 {
-    if (mode == 2)  // just update the multiple entities, the single one is not rotating
-    {
-        if (e1) e1->Update(seconds_elapsed);
-        if (e2) e2->Update(seconds_elapsed);
-        if (e3) e3->Update(seconds_elapsed);
-    }
+    time += seconds_elapsed;
 }
 
 //keyboard press event
@@ -214,111 +281,55 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             exit(0);
             break;
 
-        // LAB 4 formula modes
+        // Show Tasks 1 to 4
         case SDLK_1:
-            formula_mode = 0;
+            current_task = 1;
             break;
 
         case SDLK_2:
-            formula_mode = 1;
+            current_task = 2;
             break;
 
         case SDLK_3:
-            formula_mode = 2;
+            current_task = 3;
             break;
 
         case SDLK_4:
-            formula_mode = 3;
+            current_task = 4;
             break;
 
-        case SDLK_5:
-            formula_mode = 4;
+        // Show subtasks a to f for Tasks 1, 2, 3
+        case SDLK_a:
+            current_subtask = 0;
             break;
 
-        case SDLK_6:
-            formula_mode = 5;
-            break;
-
-        // select property of the camera
-        case SDLK_n:
-            cam_prop = PROP_NEAR;
-            break;
-
-        case SDLK_f:
-            cam_prop = PROP_FAR;
-            break;
-
-        case SDLK_v:
-            cam_prop = PROP_FOV;
-            break;
-
-        case SDLK_t:
-            useTexture = !useTexture;
-            break;
-
-        case SDLK_z:
-            useZBuffer = !useZBuffer;
+        case SDLK_b:
+            current_subtask = 1;
             break;
 
         case SDLK_c:
-            interpolateUV = !interpolateUV;
+            current_subtask = 2;
             break;
 
-        case SDLK_w:
-            wireframe = !wireframe;
+        case SDLK_d:
+            current_subtask = 3;
             break;
 
-        case SDLK_PLUS:
-        case SDLK_KP_PLUS:
-        {
-            if (cam_prop == PROP_NEAR)
-                camera.near_plane += 0.1f;
-            else if (cam_prop == PROP_FAR)
-                camera.far_plane += 5.0f;
-            else if (cam_prop == PROP_FOV)
-                camera.fov += 5.0f * DEG2RAD;
+        case SDLK_e:
+            current_subtask = 4;
+            break;
 
-            if (camera.near_plane < 0.05f)
-                camera.near_plane = 0.05f;
+        case SDLK_f:
+            current_subtask = 5;
+            break;
 
-            if (camera.far_plane < camera.near_plane + 1.0f)
-                camera.far_plane = camera.near_plane + 1.0f;
-
-            float minFov = 10.0f * DEG2RAD;
-            float maxFov = 170.0f * DEG2RAD;
-            if (camera.fov < minFov) camera.fov = minFov;
-            if (camera.fov > maxFov) camera.fov = maxFov;
-
-            camera.SetPerspective(camera.fov, camera.aspect, camera.near_plane, camera.far_plane);
-            camera.UpdateViewProjectionMatrix();
-        }
-        break;
-
-        case SDLK_MINUS:
-        case SDLK_KP_MINUS:
-        {
-            if (cam_prop == PROP_NEAR)
-                camera.near_plane -= 0.1f;
-            else if (cam_prop == PROP_FAR)
-                camera.far_plane -= 5.0f;
-            else if (cam_prop == PROP_FOV)
-                camera.fov -= 5.0f * DEG2RAD;
-
-            if (camera.near_plane < 0.05f)
-                camera.near_plane = 0.05f;
-
-            if (camera.far_plane < camera.near_plane + 1.0f)
-                camera.far_plane = camera.near_plane + 1.0f;
-
-            float minFov = 10.0f * DEG2RAD;
-            float maxFov = 170.0f * DEG2RAD;
-            if (camera.fov < minFov) camera.fov = minFov;
-            if (camera.fov > maxFov) camera.fov = maxFov;
-
-            camera.SetPerspective(camera.fov, camera.aspect, camera.near_plane, camera.far_plane);
-            camera.UpdateViewProjectionMatrix();
-        }
-        break;
+        // Change between lab 4 and lab 5 scenes
+        case SDLK_l:
+            if (current_lab == 4)
+                current_lab = 5;
+            else
+                current_lab = 4;
+            break;
     }
 }
 
