@@ -197,6 +197,7 @@ void Application::Init(void)
     camera.eye.y = camera.center.y + sinf(camera.pitch) * camera.distance;
     camera.eye.z = camera.center.z + cosf(camera.pitch) * cosf(camera.yaw) * camera.distance;
 
+    camera.aspect = (float)window_width / (float)window_height;
     camera.UpdateViewMatrix();
     camera.UpdateProjectionMatrix();
     camera.UpdateViewProjectionMatrix();
@@ -241,7 +242,7 @@ void Application::Render()
         // First light
         uniform_data.ambient_intensity = Vector3(0.2f, 0.2f, 0.2f);
         uniform_data.light.position = Vector3(0.0f, 1.5f, 1.5f);
-        uniform_data.light.intensity = Vector3(4.0f, 4.0f, 4.0f);
+        uniform_data.light.intensity = Vector3(2.0f, 2.0f, 2.0f);
 
         // Single light, or Gouraud mode
         if (lab5_shading == LAB5_GOURAUD || lab5_num_lights == 1)
