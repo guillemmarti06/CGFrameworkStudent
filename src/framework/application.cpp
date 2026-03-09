@@ -157,7 +157,7 @@ void Application::Init(void)
     
     // Create third entity, a bit smaller, centered, and rotating slower than the other 2
     e3 = new Entity();
-    e3->base_position = Vector3(0.0f, 0.5f, -1.0f);
+    e3->base_position = Vector3(0.0f, 0.8f, -0.5f);
     e3->base_scale = 1.5f;
     e3->speed = 0.8f;
     
@@ -242,7 +242,7 @@ void Application::Render()
         // First light
         uniform_data.ambient_intensity = Vector3(0.2f, 0.2f, 0.2f);
         uniform_data.light.position = Vector3(0.0f, 1.5f, 1.5f);
-        uniform_data.light.intensity = Vector3(2.0f, 2.0f, 2.0f);
+        uniform_data.light.intensity = Vector3(2.5f, 2.5f, 2.5f);
 
         // Single light, or Gouraud mode
         if (lab5_shading == LAB5_GOURAUD || lab5_num_lights == 1)
