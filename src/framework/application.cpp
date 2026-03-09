@@ -244,8 +244,8 @@ void Application::Render()
         uniform_data.light.position = Vector3(0.0f, 1.5f, 1.5f);
         uniform_data.light.intensity = Vector3(2.5f, 2.5f, 2.5f);
 
-        // Single light, or Gouraud mode
-        if (lab5_shading == LAB5_GOURAUD || lab5_num_lights == 1)
+        // Single light
+        if (lab5_num_lights == 1)
         {
             if (e1) e1->Render(uniform_data);
             if (e2) e2->Render(uniform_data);
@@ -402,14 +402,14 @@ void Application::OnKeyPressed(SDL_KeyboardEvent event)
             break;
 
         case SDLK_1:
-            if (current_lab == 5 && lab5_shading == LAB5_PHONG)
+            if (current_lab == 5)
                 lab5_num_lights = 1;
             else
                 current_task = 1;
             break;
 
         case SDLK_2:
-            if (current_lab == 5 && lab5_shading == LAB5_PHONG)
+            if (current_lab == 5)
                 lab5_num_lights = 2;
             else
                 current_task = 2;
